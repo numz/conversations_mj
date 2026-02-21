@@ -92,9 +92,11 @@ from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.utils.module_loading import import_string
 
+import openai
 from asgiref.sync import sync_to_async
 from langfuse import get_client
 from pydantic_ai import Agent, InstrumentationSettings, RunContext
+from pydantic_ai import exceptions as pydantic_ai_exceptions
 from pydantic_ai.messages import (
     BinaryContent,
     DocumentUrl,
@@ -301,9 +303,59 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 span = stack.enter_context(get_client().start_as_current_span(name="conversation"))
                 span.update_trace(user_id=str(self.user.sub), session_id=str(self.conversation.pk))
 
-            async for event in self._run_agent(messages, force_web_search):
-                if stream_text := encoder_fn(event):
-                    yield stream_text
+            max_retries = settings.STREAM_RETRY_MAX_ATTEMPTS
+            if max_retries <= 0:
+                # Original behavior: no retry
+                async for event in self._run_agent(messages, force_web_search):
+                    if stream_text := encoder_fn(event):
+                        yield stream_text
+                return
+
+            # Retry mode
+            last_error = None
+            for attempt in range(max_retries):
+                try:
+                    async for event in self._run_agent(messages, force_web_search):
+                        if stream_text := encoder_fn(event):
+                            yield stream_text
+                    return
+
+                except pydantic_ai_exceptions.UnexpectedModelBehavior as e:
+                    last_error = e
+                    logger.warning(
+                        "UnexpectedModelBehavior (attempt %d/%d): %s",
+                        attempt + 1, max_retries, e
+                    )
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(0.5 + attempt * 0.2)
+                        await self._clean()
+                        continue
+
+                except (openai.APIError, Exception) as e:
+                    last_error = e
+                    logger.error(
+                        "Streaming error (attempt %d/%d): %s",
+                        attempt + 1, max_retries, e
+                    )
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(1 + attempt * 1.5)
+                        await self._clean()
+                        continue
+
+            # All retries exhausted
+            if last_error:
+                error_msg = (
+                    "\n\n**Technical error**\n"
+                    "The model returned an invalid or corrupted response "
+                    "after multiple attempts.\n"
+                )
+                yield encoder_fn(events_v4.TextPart(text=error_msg))
+                yield encoder_fn(
+                    events_v4.FinishMessagePart(
+                        finish_reason=events_v4.FinishReason.ERROR,
+                        usage=events_v4.Usage(prompt_tokens=0, completion_tokens=0),
+                    )
+                )
 
     async def stream_text_async(self, messages: List[UIMessage], force_web_search: bool = False):
         """Return only the assistant text deltas (legacy text mode)."""

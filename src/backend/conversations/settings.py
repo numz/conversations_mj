@@ -1007,6 +1007,11 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+    STREAM_RETRY_MAX_ATTEMPTS = values.IntegerValue(
+        0,
+        environ_name="STREAM_RETRY_MAX_ATTEMPTS",
+        environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,
