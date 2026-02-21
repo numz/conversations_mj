@@ -5,6 +5,8 @@ import re
 import uuid
 from urllib.parse import quote, urlencode
 
+import requests
+
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.utils.text import get_valid_filename
@@ -213,9 +215,47 @@ class AttachmentMixin:
             )
 
         file = serializer.validated_data["file"]
-        default_storage.connection.meta.client.upload_fileobj(
-            file, default_storage.bucket_name, key, ExtraArgs=extra_args
-        )
+
+        if settings.S3_HCP_ENABLED:
+            # S3 HCP mode: use presigned URL + requests to support
+            # S3-compatible storages that require custom SSL verification.
+            s3_client = default_storage.connection.meta.client
+            presigned_url = s3_client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": default_storage.bucket_name,
+                    "Key": key,
+                    **extra_args,
+                },
+                ExpiresIn=300,
+            )
+
+            headers = {}
+            if file.size:
+                headers["Content-Length"] = str(file.size)
+            if "ContentType" in extra_args:
+                headers["Content-Type"] = extra_args["ContentType"]
+            if "ContentDisposition" in extra_args:
+                headers["Content-Disposition"] = extra_args["ContentDisposition"]
+            if "Metadata" in extra_args:
+                for meta_key, meta_value in extra_args["Metadata"].items():
+                    headers[f"x-amz-meta-{meta_key}"] = meta_value
+
+            if hasattr(file, "seek"):
+                file.seek(0)
+
+            response = requests.put(
+                presigned_url,
+                data=file,
+                headers=headers,
+                timeout=60,
+                verify=settings.AWS_S3_VERIFY,
+            )
+            response.raise_for_status()
+        else:
+            default_storage.connection.meta.client.upload_fileobj(
+                file, default_storage.bucket_name, key, ExtraArgs=extra_args
+            )
 
         self.store_attachment(holder, key, serializer)
 

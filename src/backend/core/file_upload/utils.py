@@ -99,6 +99,7 @@ def _get_s3_client() -> botocore.client.BaseClient:
             aws_access_key_id=settings.AWS_S3_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_S3_SECRET_ACCESS_KEY,
             endpoint_url=settings.AWS_S3_DOMAIN_REPLACE,
+            verify=settings.AWS_S3_VERIFY,
             config=botocore.client.Config(
                 region_name=settings.AWS_S3_REGION_NAME,
                 signature_version=settings.AWS_S3_SIGNATURE_VERSION,
