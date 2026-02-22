@@ -98,6 +98,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| CONVERSATION_GROUPING_ENABLED                   | Group conversations by date (Today, Yesterday, This week...) in the left panel. See [Feature Flags](feature-flags.md)             | true                                                    |
 
 
 ## conversations-frontend image
