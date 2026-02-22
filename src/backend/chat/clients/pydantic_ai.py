@@ -127,8 +127,15 @@ from chat.agents.local_media_url_processors import (
     update_history_local_urls,
     update_local_urls,
 )
+from chat.agents.base import (
+    clear_current_metrics,
+    get_current_metrics,
+    set_metrics_from_usage,
+)
 from chat.ai_sdk_types import (
-    ExtendedMetrics,
+    CarbonMetrics,
+    CarbonRange,
+    ExtendedUsage,
     LanguageModelV1Source,
     SourceUIPart,
     UIMessage,
@@ -873,48 +880,42 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         )
         return events_v4.StartStepPart(message_id=state.model_response_message_id)
 
-    def _compute_extended_metrics(
+    def _build_extended_usage(
         self,
         usage: Dict[str, int],
-        stream_start_time: float,
-    ) -> ExtendedMetrics:
-        """Compute extended metrics (tokens, latency, cost, carbon)."""
-        prompt_tokens = usage.get("promptTokens", 0)
-        completion_tokens = usage.get("completionTokens", 0)
-        total_tokens = prompt_tokens + completion_tokens
-        latency_ms = int((time.monotonic() - stream_start_time) * 1000)
+        latency_ms: float,
+    ) -> Dict[str, any]:
+        """Build extended usage dict from tokens, latency, and OpenGateLLM metrics."""
+        extended = {
+            "prompt_tokens": usage.get("promptTokens", 0),
+            "completion_tokens": usage.get("completionTokens", 0),
+            "latency_ms": latency_ms,
+        }
 
-        cost = None
-        cost_currency = None
-        carbon_g = None
+        ext_metrics = get_current_metrics()
+        if ext_metrics and ext_metrics.has_metrics():
+            metrics_dict = ext_metrics.to_dict()
+            if "cost" in metrics_dict:
+                extended["cost"] = metrics_dict["cost"]
+            # Rebuild nested carbon structure
+            carbon_keys = [k for k in metrics_dict if k.startswith("carbon_")]
+            if carbon_keys:
+                extended["carbon"] = {
+                    "kWh": {
+                        "min": metrics_dict.get("carbon_kwh_min"),
+                        "max": metrics_dict.get("carbon_kwh_max"),
+                    },
+                    "kgCO2eq": {
+                        "min": metrics_dict.get("carbon_kgco2eq_min"),
+                        "max": metrics_dict.get("carbon_kgco2eq_max"),
+                    },
+                }
+            # Include any other custom fields
+            for key, value in metrics_dict.items():
+                if key != "cost" and not key.startswith("carbon_"):
+                    extended[key] = value
 
-        # Cost calculation from mapping
-        try:
-            cost_mapping = json.loads(settings.EXTENDED_METRICS_COST_MAPPING or "{}")
-            model_name = getattr(settings, "AI_MODEL", None) or self.model_hrid
-            if model_name in cost_mapping:
-                model_cost = cost_mapping[model_name]
-                input_price = model_cost.get("input", 0)
-                output_price = model_cost.get("output", 0)
-                cost = (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000
-                cost_currency = model_cost.get("currency", "USD")
-        except (json.JSONDecodeError, TypeError, AttributeError):
-            pass
-
-        # Carbon calculation
-        carbon_coeff = getattr(settings, "EXTENDED_METRICS_CARBON_COEFFICIENT", 0.0)
-        if carbon_coeff and total_tokens:
-            carbon_g = round(total_tokens * carbon_coeff, 4)
-
-        return ExtendedMetrics(
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            latency_ms=latency_ms,
-            cost=round(cost, 6) if cost is not None else None,
-            cost_currency=cost_currency,
-            carbon_g=carbon_g,
-        )
+        return extended
 
     async def _finalize_conversation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -925,41 +926,24 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         image_key_mapping: Dict[str, str],
         stream_start_time: float = 0,
     ) -> AsyncGenerator[events_v4.Event, None]:
-        """
-        Finalize the conversation after the agent run completes.
-
-        This method handles all post-processing:
-        1. Final stop check (allows late cancellation)
-        2. Saves the conversation with:
-           - New messages (user request + assistant response)
-           - UI sources (citations from tools)
-           - Token usage statistics
-           - Image URL mappings (signed → unsigned for storage)
-        3. Auto-generates a title after N user messages (if not manually set)
-        4. Persists the conversation to the database
-        5. Emits title update event (if generated)
-        6. Updates Langfuse trace with final output
-        7. Emits FinishMessagePart to signal stream completion
-
-        Yields:
-            DataPart: Title update notification (if title was generated)
-            FinishMessagePart: Always emitted last to signal completion
-        """
+        """Finalize conversation: save, generate title, emit finish events."""
         await self._agent_stop_streaming(force_cache_check=True)
 
-        # Compute extended metrics if enabled
-        extended_metrics = None
-        if getattr(settings, "EXTENDED_METRICS_ENABLED", False):
-            extended_metrics = self._compute_extended_metrics(usage, stream_start_time)
+        latency_ms = (time.monotonic() - stream_start_time) * 1000
 
-        # Prepare conversation update (save deferred until after potential title generation)
+        # Build extended usage dict (tokens + latency + OpenGateLLM metrics)
+        extended_usage = None
+        if getattr(settings, "EXTENDED_METRICS_ENABLED", False):
+            extended_usage = self._build_extended_usage(usage, latency_ms)
+
+        # Prepare conversation update
         await sync_to_async(self._prepare_update_conversation)(
             final_output=new_messages,
             usage=usage,
             ui_sources=state.ui_sources,
             model_response_message_id=state.model_response_message_id,
             image_key_mapping=image_key_mapping or None,
-            extended_metrics=extended_metrics,
+            extended_usage=extended_usage,
         )
         generated_title = None
 
@@ -995,11 +979,10 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 output=run_output if self._store_analytics else "REDACTED"
             )
 
-        # Send extended metrics annotation before finish
-        if extended_metrics:
-            yield events_v4.MessageAnnotationPart(
-                annotations=[extended_metrics.model_dump()]
-            )
+        # Send extended usage annotation before finish
+        if extended_usage:
+            annotation = {"type": "extended_usage", **extended_usage}
+            yield events_v4.MessageAnnotationPart(annotations=[annotation])
 
         yield events_v4.FinishMessagePart(
             finish_reason=events_v4.FinishReason.STOP,
@@ -1008,6 +991,9 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 completion_tokens=usage["completionTokens"],
             ),
         )
+
+        # Clear metrics after use
+        clear_current_metrics()
 
     async def _run_agent(  # pylint: disable=too-many-locals
         self,
@@ -1019,6 +1005,9 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             return
 
         stream_start_time = time.monotonic()
+
+        # Clear any previous extended metrics before starting
+        clear_current_metrics()
 
         # Langfuse settings
         if self._langfuse_available:
@@ -1089,8 +1078,13 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 usage["promptTokens"] = final_usage.input_tokens
                 usage["completionTokens"] = final_usage.output_tokens
 
+                # Extract usage details (may contain cost/carbon from OpenGateLLM)
+                _usage_details = getattr(final_usage, "details", None)
+                if _usage_details and isinstance(_usage_details, dict):
+                    set_metrics_from_usage(_usage_details)
+
         async for event in self._finalize_conversation(
-            new_messages, run_output, usage, state, image_key_mapping, stream_start_time
+            new_messages, run_output, usage, state, image_key_mapping, stream_start_time,
         ):
             yield event
 
@@ -1102,21 +1096,9 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         ui_sources: Optional[List[SourceUIPart]] = None,
         model_response_message_id: str | None = None,
         image_key_mapping: Optional[Dict[str, str]] = None,
-        extended_metrics: Optional[ExtendedMetrics] = None,
+        extended_usage: Optional[Dict] = None,
     ):  # pylint: disable=too-many-arguments
-        """
-        Save everything related to the conversation.
-
-        Things to improve here:
-         - The way we need to add the UI sources to the final output message.
-
-        Args:
-            final_output (List[ModelRequest | ModelMessage]): The final output from the agent.
-            usage (Dict[str, int]): The token usage statistics.
-            model_response_message_id (str | None): Message ID
-            image_key_mapping (Dict[str, str] | None): Mapping of image id and S3 urls
-            ui_sources (List[SourceUIPart]): Optional UI sources to include in the conversation.
-        """
+        """Save everything related to the conversation."""
         _merged_final_output_request = ModelRequest(
             parts=[
                 part for msg in final_output if isinstance(msg, ModelRequest) for part in msg.parts
@@ -1142,10 +1124,24 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         _output_ui_message = model_message_to_ui_message(_merged_final_output_message)
         if ui_sources:
             _output_ui_message.parts += ui_sources
-        if extended_metrics:
-            if _output_ui_message.annotations is None:
-                _output_ui_message.annotations = []
-            _output_ui_message.annotations.append(extended_metrics.model_dump())
+
+        # Attach extended usage metrics to the assistant message
+        if extended_usage:
+            carbon = None
+            if "carbon" in extended_usage and extended_usage["carbon"]:
+                carbon_data = extended_usage["carbon"]
+                carbon = CarbonMetrics(
+                    kWh=CarbonRange(**carbon_data["kWh"]) if carbon_data.get("kWh") else None,
+                    kgCO2eq=CarbonRange(**carbon_data["kgCO2eq"]) if carbon_data.get("kgCO2eq") else None,
+                )
+            _output_ui_message.usage = ExtendedUsage(
+                prompt_tokens=extended_usage.get("prompt_tokens", 0),
+                completion_tokens=extended_usage.get("completion_tokens", 0),
+                cost=extended_usage.get("cost"),
+                carbon=carbon,
+                latency_ms=extended_usage.get("latency_ms"),
+            )
+
         if model_response_message_id:
             _output_ui_message.id = model_response_message_id
         else:

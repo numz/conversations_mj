@@ -275,9 +275,11 @@ class UIMessage(Message):
 
     Attributes:
         parts: List of UI parts that make up the message content.
+        usage: Optional extended usage metrics for assistant messages.
     """
 
     parts: List[UIPart]
+    usage: Optional["ExtendedUsage"] = None
 
 
 class CreateMessage(BaseModel):
@@ -414,20 +416,28 @@ class LanguageModelUsage(BaseModel):
     totalTokens: int
 
 
-class ExtendedMetrics(BaseModel):
-    """
-    Extended metrics for a message (tokens, latency, cost, carbon).
-    Stored in UIMessage.annotations for persistence.
-    """
+class CarbonRange(BaseModel):
+    """Min/max range for carbon metrics."""
 
-    type: Literal["extended_metrics"] = "extended_metrics"
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-    latency_ms: int
+    min: float
+    max: float
+
+
+class CarbonMetrics(BaseModel):
+    """Carbon footprint metrics from OpenGateLLM."""
+
+    kWh: Optional[CarbonRange] = None
+    kgCO2eq: Optional[CarbonRange] = None
+
+
+class ExtendedUsage(BaseModel):
+    """Extended usage metrics per message (tokens, latency, cost, carbon)."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
     cost: Optional[float] = None
-    cost_currency: Optional[str] = None
-    carbon_g: Optional[float] = None
+    carbon: Optional[CarbonMetrics] = None
+    latency_ms: Optional[float] = None
 
 
 class AssistantMessageContentText(BaseModel):

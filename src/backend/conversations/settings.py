@@ -1020,22 +1020,22 @@ USER QUESTION:
         default=55, environ_name="KEEPALIVE_INTERVAL", environ_prefix=None
     )
 
-    # Extended Metrics (Feature 17)
+    # Extended metrics extraction from LLM responses (OpenGateLLM)
+    # Maps metric names to JSON paths in the usage data (dot notation for nested fields)
     EXTENDED_METRICS_ENABLED = values.BooleanValue(
         default=False,
         environ_name="EXTENDED_METRICS_ENABLED",
         environ_prefix=None,
     )
-    # JSON mapping: {"model-name": {"input": 0.003, "output": 0.015, "currency": "EUR"}}
-    EXTENDED_METRICS_COST_MAPPING = values.Value(
-        default="{}",
-        environ_name="EXTENDED_METRICS_COST_MAPPING",
-        environ_prefix=None,
-    )
-    # gCO2 per token (total tokens)
-    EXTENDED_METRICS_CARBON_COEFFICIENT = values.FloatValue(
-        default=0.0,
-        environ_name="EXTENDED_METRICS_CARBON_COEFFICIENT",
+    EXTENDED_METRICS_MAPPING = values.DictValue(
+        default={
+            "cost": "cost",
+            "carbon_kwh_min": "carbon.kWh.min",
+            "carbon_kwh_max": "carbon.kWh.max",
+            "carbon_kgco2eq_min": "carbon.kgCO2eq.min",
+            "carbon_kgco2eq_max": "carbon.kgCO2eq.max",
+        },
+        environ_name="EXTENDED_METRICS_MAPPING",
         environ_prefix=None,
     )
 

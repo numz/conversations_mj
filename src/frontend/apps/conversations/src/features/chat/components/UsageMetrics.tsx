@@ -1,88 +1,138 @@
-import { Message } from '@ai-sdk/ui-utils';
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { Box, Text } from '@/components';
+import { Box, Icon, Text } from '@/components';
 
-interface ExtendedMetrics {
-  type: 'extended_metrics';
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  latency_ms: number;
-  cost?: number;
-  cost_currency?: string;
-  carbon_g?: number;
-}
-
-function isExtendedMetrics(value: unknown): value is ExtendedMetrics {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as Record<string, unknown>).type === 'extended_metrics'
-  );
-}
-
-export function extractMetrics(
-  message: Message,
-): ExtendedMetrics | undefined {
-  if (!message.annotations) return undefined;
-  return message.annotations.find(isExtendedMetrics);
-}
-
-function formatLatency(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatCost(cost: number, currency?: string): string {
-  const curr = currency ?? 'USD';
-  if (cost < 0.01) return `<0.01 ${curr}`;
-  return `${cost.toFixed(2)} ${curr}`;
-}
-
-function formatCarbon(grams: number): string {
-  if (grams < 1) return `${(grams * 1000).toFixed(1)} mgCO₂`;
-  return `${grams.toFixed(2)} gCO₂`;
-}
+import { ExtendedUsage } from '../types';
 
 interface UsageMetricsProps {
-  message: Message;
+  usage: ExtendedUsage;
 }
 
-export const UsageMetrics: React.FC<UsageMetricsProps> = React.memo(
-  ({ message }) => {
-    const metrics = extractMetrics(message);
-    if (!metrics) return null;
+export const UsageMetrics = ({ usage }: UsageMetricsProps) => {
+  const { t } = useTranslation();
 
-    const items: string[] = [];
-    items.push(`${metrics.total_tokens} tokens`);
-    items.push(formatLatency(metrics.latency_ms));
-    if (metrics.cost != null) {
-      items.push(formatCost(metrics.cost, metrics.cost_currency));
-    }
-    if (metrics.carbon_g != null) {
-      items.push(formatCarbon(metrics.carbon_g));
-    }
+  const totalTokens = usage.prompt_tokens + usage.completion_tokens;
 
-    return (
-      <Box
-        $direction="row"
-        $gap="8px"
-        $margin={{ top: 'xs' }}
-        $css={`
-          color: var(--c--contextuals--content--semantic--neutral--tertiary);
-          font-size: 11px;
-          opacity: 0.8;
-        `}
-      >
-        {items.map((item, i) => (
-          <Text key={i} $size="xs">
-            {item}
+  // Convert kgCO2eq to mgCO2eq for display (more readable for small values)
+  const carbonMg =
+    usage.carbon?.kgCO2eq?.max !== undefined
+      ? usage.carbon.kgCO2eq.max * 1_000_000 // kg to mg
+      : null;
+
+  // Convert kWh to Wh for display
+  const energyWh =
+    usage.carbon?.kWh?.max !== undefined
+      ? usage.carbon.kWh.max * 1000 // kWh to Wh
+      : null;
+
+  // Convert ms to seconds
+  const latencySeconds =
+    usage.latency_ms !== undefined ? usage.latency_ms / 1000 : null;
+
+  // Don't render if no extended metrics available
+  const hasExtendedMetrics =
+    carbonMg !== null || energyWh !== null || latencySeconds !== null;
+
+  if (!hasExtendedMetrics && totalTokens === 0) {
+    return null;
+  }
+
+  return (
+    <Box
+      $direction="row"
+      $align="center"
+      $gap="8px"
+      $css={`
+        font-size: 11px;
+        color: var(--c--theme--colors--greyscale-500);
+        flex-wrap: nowrap;
+        flex-shrink: 1;
+        min-width: 0;
+      `}
+    >
+      {/* Total tokens */}
+      {totalTokens > 0 && (
+        <Box
+          $direction="row"
+          $align="center"
+          $gap="3px"
+          title={t('Total tokens used')}
+        >
+          <Icon
+            iconName="token"
+            $theme="greyscale"
+            $variation="500"
+            $size="16px"
+          />
+          <Text $theme="greyscale" $variation="500" $size="11px">
+            {totalTokens.toLocaleString()}
           </Text>
-        ))}
-      </Box>
-    );
-  },
-);
+        </Box>
+      )}
 
-UsageMetrics.displayName = 'UsageMetrics';
+      {/* Carbon footprint */}
+      {carbonMg !== null && (
+        <Box
+          $direction="row"
+          $align="center"
+          $gap="3px"
+          title={t('Carbon footprint (estimated max)')}
+        >
+          <Icon
+            iconName="eco"
+            $theme="greyscale"
+            $variation="500"
+            $size="16px"
+          />
+          <Text $theme="greyscale" $variation="500" $size="11px">
+            {carbonMg < 0.01
+              ? `<0.01 mg CO2`
+              : `${carbonMg.toFixed(2)} mg CO2`}
+          </Text>
+        </Box>
+      )}
+
+      {/* Energy consumption */}
+      {energyWh !== null && (
+        <Box
+          $direction="row"
+          $align="center"
+          $gap="3px"
+          title={t('Energy consumption (estimated max)')}
+        >
+          <Icon
+            iconName="bolt"
+            $theme="greyscale"
+            $variation="500"
+            $size="16px"
+          />
+          <Text $theme="greyscale" $variation="500" $size="11px">
+            {energyWh < 0.001
+              ? `<0.001 Wh`
+              : `${energyWh.toFixed(3)} Wh`}
+          </Text>
+        </Box>
+      )}
+
+      {/* Latency */}
+      {latencySeconds !== null && (
+        <Box
+          $direction="row"
+          $align="center"
+          $gap="3px"
+          title={t('Response time')}
+        >
+          <Icon
+            iconName="schedule"
+            $theme="greyscale"
+            $variation="500"
+            $size="16px"
+          />
+          <Text $theme="greyscale" $variation="500" $size="11px">
+            {latencySeconds.toFixed(1)}s
+          </Text>
+        </Box>
+      )}
+    </Box>
+  );
+};

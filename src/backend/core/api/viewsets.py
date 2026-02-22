@@ -224,7 +224,7 @@ class ConfigView(drf.views.APIView):
         # Feature flags for optional custom features
         # Individual flags are added by their respective features
         dict_settings["feature_flags_custom"] = {
-            "EXTENDED_METRICS_ENABLED": getattr(settings, "EXTENDED_METRICS_ENABLED", False),
+            "extended_metrics_enabled": getattr(settings, "EXTENDED_METRICS_ENABLED", False),
         }
 
         dict_settings["theme_customization"] = self._load_theme_customization()

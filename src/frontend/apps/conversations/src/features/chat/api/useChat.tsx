@@ -1,10 +1,15 @@
 import { UseChatOptions, useChat as useAiSdkChat } from '@ai-sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { fetchAPI } from '@/api';
 import { KEY_LIST_CONVERSATION } from '@/features/chat/api/useConversations';
 import { useChatPreferencesStore } from '@/features/chat/stores/useChatPreferencesStore';
+
+import {
+  ExtendedUsage,
+  ExtendedUsageAnnotation,
+} from '../types';
 
 const fetchAPIAdapter = (input: RequestInfo | URL, init?: RequestInit) => {
   let url: string;
@@ -60,13 +65,64 @@ function isConversationMetadataEvent(
   );
 }
 
-export function useChat(options: Omit<UseChatOptions, 'fetch'>) {
+export type UseChatResult = ReturnType<typeof useAiSdkChat> & {
+  usageByMessageId: Map<string, ExtendedUsage>;
+};
+
+export function useChat(
+  options: Omit<UseChatOptions, 'fetch'>,
+): UseChatResult {
   const queryClient = useQueryClient();
 
+  const [usageByMessageId, setUsageByMessageId] = useState<
+    Map<string, ExtendedUsage>
+  >(() => new Map());
+
+  const { onFinish: userOnFinish, ...restOptions } = options;
+
+  const handleFinish = useCallback(
+    (
+      message: Parameters<NonNullable<UseChatOptions['onFinish']>>[0],
+      finishOptions: Parameters<NonNullable<UseChatOptions['onFinish']>>[1],
+    ) => {
+      // Extract extended usage from message annotations
+      const annotations = message.annotations as
+        | ExtendedUsageAnnotation[]
+        | undefined;
+      const extendedUsageAnnotation = annotations?.find(
+        (a) => a?.type === 'extended_usage',
+      );
+
+      const extendedUsage: ExtendedUsage = {
+        prompt_tokens:
+          extendedUsageAnnotation?.prompt_tokens ??
+          finishOptions?.usage?.promptTokens ??
+          0,
+        completion_tokens:
+          extendedUsageAnnotation?.completion_tokens ??
+          finishOptions?.usage?.completionTokens ??
+          0,
+        cost: extendedUsageAnnotation?.cost,
+        carbon: extendedUsageAnnotation?.carbon,
+        latency_ms: extendedUsageAnnotation?.latency_ms,
+      };
+
+      if (message.id) {
+        setUsageByMessageId((prev) =>
+          new Map(prev).set(message.id, extendedUsage),
+        );
+      }
+
+      userOnFinish?.(message, finishOptions);
+    },
+    [userOnFinish],
+  );
+
   const result = useAiSdkChat({
-    ...options,
+    ...restOptions,
     maxSteps: 3,
     fetch: fetchAPIAdapter,
+    onFinish: handleFinish,
   });
 
   useEffect(() => {
@@ -80,5 +136,9 @@ export function useChat(options: Omit<UseChatOptions, 'fetch'>) {
       }
     }
   }, [result.data, queryClient]);
-  return result;
+
+  return {
+    ...result,
+    usageByMessageId,
+  };
 }
