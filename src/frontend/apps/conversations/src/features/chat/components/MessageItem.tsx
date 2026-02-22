@@ -18,6 +18,7 @@ import {
 import { ReasoningBox } from '@/features/chat/components/ReasoningBox';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
+import { UsageMetrics } from '@/features/chat/components/UsageMetrics';
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
@@ -535,6 +536,11 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
               </Box>
             )}
 
+          {message.role === 'assistant' &&
+            !(isLastAssistantMessage && status === 'streaming') && (
+              <UsageMetrics message={message} />
+            )}
+
           {isSourceOpen === message.id && sourceParts.length > 0 && (
             <Box
               $css={`
@@ -582,6 +588,13 @@ const arePropsEqual = (
   const prevParts = prevProps.message.parts;
   const nextParts = nextProps.message.parts;
   if (prevParts !== nextParts) {
+    return false;
+  }
+
+  // Check annotations (for extended metrics)
+  const prevAnnotationsLength = prevProps.message.annotations?.length ?? 0;
+  const nextAnnotationsLength = nextProps.message.annotations?.length ?? 0;
+  if (prevAnnotationsLength !== nextAnnotationsLength) {
     return false;
   }
 

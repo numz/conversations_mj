@@ -128,6 +128,7 @@ from chat.agents.local_media_url_processors import (
     update_local_urls,
 )
 from chat.ai_sdk_types import (
+    ExtendedMetrics,
     LanguageModelV1Source,
     SourceUIPart,
     UIMessage,
@@ -894,6 +895,49 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         )
         return events_v4.StartStepPart(message_id=state.model_response_message_id)
 
+    def _compute_extended_metrics(
+        self,
+        usage: Dict[str, int],
+        stream_start_time: float,
+    ) -> ExtendedMetrics:
+        """Compute extended metrics (tokens, latency, cost, carbon)."""
+        prompt_tokens = usage.get("promptTokens", 0)
+        completion_tokens = usage.get("completionTokens", 0)
+        total_tokens = prompt_tokens + completion_tokens
+        latency_ms = int((time.monotonic() - stream_start_time) * 1000)
+
+        cost = None
+        cost_currency = None
+        carbon_g = None
+
+        # Cost calculation from mapping
+        try:
+            cost_mapping = json.loads(settings.EXTENDED_METRICS_COST_MAPPING or "{}")
+            model_name = getattr(settings, "AI_MODEL", None) or self.model_hrid
+            if model_name in cost_mapping:
+                model_cost = cost_mapping[model_name]
+                input_price = model_cost.get("input", 0)
+                output_price = model_cost.get("output", 0)
+                cost = (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000
+                cost_currency = model_cost.get("currency", "USD")
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            pass
+
+        # Carbon calculation
+        carbon_coeff = getattr(settings, "EXTENDED_METRICS_CARBON_COEFFICIENT", 0.0)
+        if carbon_coeff and total_tokens:
+            carbon_g = round(total_tokens * carbon_coeff, 4)
+
+        return ExtendedMetrics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            latency_ms=latency_ms,
+            cost=round(cost, 6) if cost is not None else None,
+            cost_currency=cost_currency,
+            carbon_g=carbon_g,
+        )
+
     async def _finalize_conversation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         new_messages: list,
@@ -901,6 +945,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         usage: Dict[str, int],
         state: StreamingState,
         image_key_mapping: Dict[str, str],
+        stream_start_time: float = 0,
     ) -> AsyncGenerator[events_v4.Event, None]:
         """
         Finalize the conversation after the agent run completes.
@@ -924,6 +969,11 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         """
         await self._agent_stop_streaming(force_cache_check=True)
 
+        # Compute extended metrics if enabled
+        extended_metrics = None
+        if getattr(settings, "EXTENDED_METRICS_ENABLED", False):
+            extended_metrics = self._compute_extended_metrics(usage, stream_start_time)
+
         # Prepare conversation update (save deferred until after potential title generation)
         await sync_to_async(self._prepare_update_conversation)(
             final_output=new_messages,
@@ -931,6 +981,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             ui_sources=state.ui_sources,
             model_response_message_id=state.model_response_message_id,
             image_key_mapping=image_key_mapping or None,
+            extended_metrics=extended_metrics,
         )
         generated_title = None
 
@@ -965,7 +1016,13 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             langfuse.update_current_trace(
                 output=run_output if self._store_analytics else "REDACTED"
             )
-            # Vercel finish message
+
+        # Send extended metrics annotation before finish
+        if extended_metrics:
+            yield events_v4.MessageAnnotationPart(
+                annotations=[extended_metrics.model_dump()]
+            )
+
         yield events_v4.FinishMessagePart(
             finish_reason=events_v4.FinishReason.STOP,
             usage=events_v4.Usage(
@@ -982,6 +1039,8 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         """Run the Pydantic AI agent and stream events."""
         if not messages or messages[-1].role != "user":
             return
+
+        stream_start_time = time.monotonic()
 
         # Langfuse settings
         if self._langfuse_available:
@@ -1053,7 +1112,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 usage["completionTokens"] = final_usage.output_tokens
 
         async for event in self._finalize_conversation(
-            new_messages, run_output, usage, state, image_key_mapping
+            new_messages, run_output, usage, state, image_key_mapping, stream_start_time
         ):
             yield event
 
@@ -1065,6 +1124,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         ui_sources: Optional[List[SourceUIPart]] = None,
         model_response_message_id: str | None = None,
         image_key_mapping: Optional[Dict[str, str]] = None,
+        extended_metrics: Optional[ExtendedMetrics] = None,
     ):  # pylint: disable=too-many-arguments
         """
         Save everything related to the conversation.
@@ -1104,6 +1164,10 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         _output_ui_message = model_message_to_ui_message(_merged_final_output_message)
         if ui_sources:
             _output_ui_message.parts += ui_sources
+        if extended_metrics:
+            if _output_ui_message.annotations is None:
+                _output_ui_message.annotations = []
+            _output_ui_message.annotations.append(extended_metrics.model_dump())
         if model_response_message_id:
             _output_ui_message.id = model_response_message_id
         else:
