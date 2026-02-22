@@ -253,8 +253,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           part.type === 'tool-invocation' &&
           part.toolInvocation.toolName !== 'document_parsing',
       );
-      const lastToolInvocation =
-        toolInvocations?.[toolInvocations.length - 1];
+      const lastToolInvocation = toolInvocations?.[toolInvocations.length - 1];
       if (lastToolInvocation?.type === 'tool-invocation') {
         const toolName = lastToolInvocation.toolInvocation.toolName;
         processingLabel =
