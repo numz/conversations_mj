@@ -78,6 +78,7 @@ import functools
 import json
 import logging
 import os
+import threading
 import time
 import uuid
 from contextlib import AsyncExitStack, ExitStack
@@ -151,6 +152,12 @@ document_store_backend = import_string(settings.RAG_DOCUMENT_SEARCH_BACKEND)
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
+
+# Global registry for cancel events - allows stop_streaming() to signal cancellation
+# to the streaming thread from a different request/instance.
+# Only used when STREAMING_CANCEL_EVENT_ENABLED is True.
+_cancel_events: Dict[str, threading.Event] = {}
+_cancel_events_lock = threading.Lock()
 
 CACHE_TIMEOUT = 30 * 60  # 30 minutes timeout
 DOCUMENT_URL_PREFIX = "/media-key/"
@@ -266,26 +273,75 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
     def _stop_cache_key(self):
         return f"streaming:stop:{self.conversation.pk}"
 
+    def _get_or_create_cancel_event(self) -> threading.Event:
+        """Get or create a cancel event for this conversation."""
+        key = str(self.conversation.pk)
+        with _cancel_events_lock:
+            if key not in _cancel_events:
+                _cancel_events[key] = threading.Event()
+            return _cancel_events[key]
+
+    def _cleanup_cancel_event(self):
+        """Remove the cancel event for this conversation."""
+        key = str(self.conversation.pk)
+        with _cancel_events_lock:
+            _cancel_events.pop(key, None)
+
     # --------------------------------------------------------------------- #
     # Public streaming API (unchanged signatures)
     # --------------------------------------------------------------------- #
 
     def stream_text(self, messages: List[UIMessage], force_web_search: bool = False):
         """Return only the assistant text deltas (legacy text mode)."""
-        return convert_async_generator_to_sync(self.stream_text_async(messages, force_web_search))
+        if settings.STREAMING_CANCEL_EVENT_ENABLED:
+            cancel_event = self._get_or_create_cancel_event()
+            cancel_event.clear()
+            try:
+                yield from convert_async_generator_to_sync(
+                    self.stream_text_async(messages, force_web_search),
+                    cancel_event=cancel_event,
+                )
+            finally:
+                self._cleanup_cancel_event()
+        else:
+            yield from convert_async_generator_to_sync(
+                self.stream_text_async(messages, force_web_search)
+            )
 
     def stream_data(self, messages: List[UIMessage], force_web_search: bool = False):
         """Return Vercel-AI-SDK formatted events."""
-        return convert_async_generator_to_sync(self.stream_data_async(messages, force_web_search))
+        if settings.STREAMING_CANCEL_EVENT_ENABLED:
+            cancel_event = self._get_or_create_cancel_event()
+            cancel_event.clear()
+            try:
+                yield from convert_async_generator_to_sync(
+                    self.stream_data_async(messages, force_web_search),
+                    cancel_event=cancel_event,
+                )
+            finally:
+                self._cleanup_cancel_event()
+        else:
+            yield from convert_async_generator_to_sync(
+                self.stream_data_async(messages, force_web_search)
+            )
 
     def stop_streaming(self):
         """
         Stop the current streaming operation.
 
-        This method is a placeholder for stopping the streaming operation.
+        Sets the cache key for the polling-based cancellation.
+        When STREAMING_CANCEL_EVENT_ENABLED is True, also triggers the cancel
+        event to immediately cancel the async task and close the HTTP connection.
         """
         logger.info("Stopping streaming for conversation %s", self.conversation.id)
         cache.set(self._stop_cache_key, "1", timeout=CACHE_TIMEOUT)
+
+        if settings.STREAMING_CANCEL_EVENT_ENABLED:
+            key = str(self.conversation.pk)
+            with _cancel_events_lock:
+                if key in _cancel_events:
+                    logger.info("Triggering cancel event for conversation %s", self.conversation.id)
+                    _cancel_events[key].set()
 
     # --------------------------------------------------------------------- #
     # Async internals
