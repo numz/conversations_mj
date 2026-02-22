@@ -1,6 +1,6 @@
 import merge from 'lodash/merge';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { useChatPreferencesStore } from '@/features/chat/stores/useChatPreferencesStore';
 import { safeLocalStorage } from '@/utils/storages';
@@ -161,8 +161,7 @@ export const useCunninghamTheme = create<ThemeStore>()(
     }),
     {
       name: 'cunningham-theme',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-      storage: safeLocalStorage as any,
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
         isDarkMode: state.isDarkMode,
         baseTheme: state.baseTheme,
