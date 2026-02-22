@@ -72,12 +72,12 @@ export const ReasoningBox = ({
         $align="center"
         $justify="space-between"
         $padding={{ horizontal: 'sm', vertical: 'xs' }}
-        $background="var(--c--theme--colors--greyscale-100)"
+        $background="var(--c--contextuals--background--semantic--neutral--tertiary)"
         $radius={hasContent && isExpanded ? 'md md 0 0' : 'md'}
         $css={`
           cursor: ${hasContent ? 'pointer' : 'default'};
           user-select: none;
-          border-bottom: ${hasContent && isExpanded ? '1px solid var(--c--theme--colors--greyscale-200)' : 'none'};
+          border-bottom: ${hasContent && isExpanded ? '1px solid var(--c--contextuals--border--semantic--neutral--default)' : 'none'};
           transition: border-radius 0.3s ease;
         `}
         onClick={hasContent ? toggleExpanded : undefined}
@@ -103,8 +103,7 @@ export const ReasoningBox = ({
                 <Loader />
               </Box>
               <Text
-                $variation="600"
-                $css="font-size: 0.85em; font-weight: 500;"
+                $css="font-size: 0.85em; font-weight: 500; color: var(--c--contextuals--content--semantic--neutral--secondary);"
               >
                 {processingLabel}
               </Text>
@@ -113,14 +112,11 @@ export const ReasoningBox = ({
             <>
               <Icon
                 iconName="psychology"
-                $theme="greyscale"
-                $variation="500"
                 $size="16px"
+                $css="color: var(--c--contextuals--content--semantic--neutral--secondary);"
               />
               <Text
-                $theme="greyscale"
-                $variation="500"
-                $css="font-size: 0.85em; font-weight: 500;"
+                $css="font-size: 0.85em; font-weight: 500; color: var(--c--contextuals--content--semantic--neutral--secondary);"
               >
                 {t('Reasoning')}
               </Text>
@@ -142,9 +138,8 @@ export const ReasoningBox = ({
           <Box $direction="row" $align="center" $gap="4px">
             {!isExpanded && lastLine && (
               <Text
-                $theme="greyscale"
-                $variation="400"
                 $css={`
+                  color: var(--c--contextuals--content--semantic--neutral--tertiary);
                   font-size: 0.8em;
                   max-width: 200px;
                   overflow: hidden;
@@ -157,10 +152,8 @@ export const ReasoningBox = ({
             )}
             <Icon
               iconName={isExpanded ? 'expand_less' : 'expand_more'}
-              $theme="greyscale"
-              $variation="500"
               $size="18px"
-              $css="transition: transform 0.3s ease;"
+              $css="color: var(--c--contextuals--content--semantic--neutral--secondary); transition: transform 0.3s ease;"
             />
           </Box>
         )}
@@ -171,8 +164,8 @@ export const ReasoningBox = ({
         <Box
           id="reasoning-content"
           className={`reasoning-content ${isExpanded ? 'expanded' : 'collapsed'}`}
-          $background="var(--c--theme--colors--greyscale-100)"
-          $color="var(--c--theme--colors--greyscale-500)"
+          $background="var(--c--contextuals--background--semantic--neutral--tertiary)"
+          $color="var(--c--contextuals--content--semantic--neutral--secondary)"
           $padding={{ horizontal: 'sm', bottom: 'sm', top: 'xs' }}
           $radius="0 0 md md"
           $css={`
