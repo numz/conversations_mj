@@ -6,6 +6,7 @@ import { Box, Text } from '@/components';
 import { useFeatureFlags } from '@/core/config/api/useFeatureFlags';
 import { useCunninghamTheme } from '@/cunningham';
 import { ChatConversation } from '@/features/chat/types';
+import { useTypewriter } from '@/features/left-panel/hooks/useTypewriter';
 import { formatRelativeTime } from '@/features/left-panel/utils/groupConversationsByDate';
 
 import BubbleIcon from '../assets/bubble-bold.svg';
@@ -27,16 +28,24 @@ const bubbleContainerStyles = css`
 type SimpleConversationItemProps = {
   conversation: ChatConversation;
   showAccesses?: boolean;
+  isCurrentConversation?: boolean;
 };
 
 export const SimpleConversationItem = memo(function SimpleConversationItem({
   conversation,
   showAccesses: _showAccesses = false,
+  isCurrentConversation = false,
 }: SimpleConversationItemProps) {
   const { t, i18n } = useTranslation();
   const { spacingsTokens } = useCunninghamTheme();
   const featureFlags = useFeatureFlags();
-  const title = conversation.title || t('Untitled conversation');
+
+  const titleText = conversation.title || t('Untitled conversation');
+  const animatedTitle = useTypewriter(titleText, conversation.id, 25);
+  const title =
+    featureFlags.inline_rename_enabled && isCurrentConversation
+      ? animatedTitle
+      : titleText;
 
   return (
     <Box
@@ -62,7 +71,7 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
       >
         <Text
           aria-describedby="doc-title"
-          aria-label={title}
+          aria-label={titleText}
           $size="sm"
           $variation="850"
           $css={ItemTextCss}

@@ -1011,6 +1011,10 @@ USER QUESTION:
     CONVERSATION_GROUPING_ENABLED = values.BooleanValue(
         default=True, environ_name="CONVERSATION_GROUPING_ENABLED", environ_prefix=None,
     )
+    # Feature: Inline Rename + Typewriter
+    INLINE_RENAME_ENABLED = values.BooleanValue(
+        default=True, environ_name="INLINE_RENAME_ENABLED", environ_prefix=None,
+    )
 
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(

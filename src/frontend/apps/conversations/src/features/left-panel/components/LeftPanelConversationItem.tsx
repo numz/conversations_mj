@@ -1,10 +1,12 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { css } from 'styled-components';
 
 import { Box, StyledLink } from '@/components';
+import { useFeatureFlags } from '@/core/config/api/useFeatureFlags';
 import { useChatPreferencesStore } from '@/features/chat/stores/useChatPreferencesStore';
 import { ChatConversation } from '@/features/chat/types';
 import { ConversationItemActions } from '@/features/left-panel/components/ConversationItemActions';
+import { EditableConversationTitle } from '@/features/left-panel/components/EditableConversationTitle';
 import { SimpleConversationItem } from '@/features/left-panel/components/SimpleConversationItem';
 import { useResponsiveStore } from '@/stores';
 
@@ -61,6 +63,8 @@ export const LeftPanelConversationItem = memo(
   }: LeftPanelConversationItemProps) {
     const isDesktop = useResponsiveStore((state) => state.isDesktop);
     const setPanelOpen = useChatPreferencesStore((state) => state.setPanelOpen);
+    const featureFlags = useFeatureFlags();
+    const [isEditing, setIsEditing] = useState(false);
 
     const handleLinkClick = useCallback(() => {
       if (!isDesktop) {
@@ -82,16 +86,34 @@ export const LeftPanelConversationItem = memo(
         $css={boxStyles}
         className="--docs--left-panel-favorite-item"
       >
-        <StyledLink
-          href={`/chat/${conversation.id}/`}
-          $css={linkStyles}
-          onClick={handleLinkClick}
-        >
-          <SimpleConversationItem showAccesses conversation={conversation} />
-        </StyledLink>
+        {featureFlags.inline_rename_enabled && isEditing ? (
+          <EditableConversationTitle
+            conversation={conversation}
+            onClose={() => setIsEditing(false)}
+          />
+        ) : (
+          <StyledLink
+            href={`/chat/${conversation.id}/`}
+            $css={linkStyles}
+            onClick={handleLinkClick}
+          >
+            <SimpleConversationItem
+              showAccesses
+              conversation={conversation}
+              isCurrentConversation={isCurrentConversation}
+            />
+          </StyledLink>
+        )}
 
         <Box className="pinned-actions">
-          <ConversationItemActions conversation={conversation} />
+          <ConversationItemActions
+            conversation={conversation}
+            onRename={
+              featureFlags.inline_rename_enabled
+                ? () => setIsEditing(true)
+                : undefined
+            }
+          />
         </Box>
       </Box>
     );
