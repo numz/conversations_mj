@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Icon, Text } from '@/components';
+import { useCunninghamTheme } from '@/cunningham';
 import { useFeatureFlags } from '@/core/config';
 import { useClipboard } from '@/hook';
 
@@ -12,10 +13,37 @@ import { exportTextToTXT } from '../utils/exportText';
 interface CodeBlockActionsProps {
   onCopy: () => void;
   onDownload?: () => void;
+  isDarkMode: boolean;
 }
 
-const CodeBlockActions = ({ onCopy, onDownload }: CodeBlockActionsProps) => {
+const CodeBlockActions = ({
+  onCopy,
+  onDownload,
+  isDarkMode,
+}: CodeBlockActionsProps) => {
   const { t } = useTranslation();
+
+  const buttonCss = css`
+    padding: 6px 10px;
+    background: ${isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)'};
+    border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.15)'};
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    width: fit-content;
+    &:hover {
+      background: ${isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)'};
+      border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
+    }
+  `;
 
   return (
     <Box
@@ -29,31 +57,7 @@ const CodeBlockActions = ({ onCopy, onDownload }: CodeBlockActionsProps) => {
         z-index: 10;
       `}
     >
-      <Box
-        as="button"
-        onClick={onCopy}
-        $css={css`
-          padding: 6px 10px;
-          background: rgba(0, 0, 0, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 500;
-          color: #fff;
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: 4px;
-          transition: all 0.2s;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          width: fit-content;
-          &:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-          }
-        `}
-      >
+      <Box as="button" onClick={onCopy} $css={buttonCss}>
         <Icon
           iconName="content_copy"
           $size="14px"
@@ -67,31 +71,7 @@ const CodeBlockActions = ({ onCopy, onDownload }: CodeBlockActionsProps) => {
       </Box>
 
       {onDownload && (
-        <Box
-          as="button"
-          onClick={onDownload}
-          $css={css`
-            padding: 6px 10px;
-            background: rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            color: #fff;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.2s;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            width: fit-content;
-            &:hover {
-              background: rgba(255, 255, 255, 0.1);
-              border: 1px solid rgba(255, 255, 255, 0.2);
-            }
-          `}
-        >
+        <Box as="button" onClick={onDownload} $css={buttonCss}>
           <Icon
             iconName="download"
             $size="14px"
@@ -119,6 +99,7 @@ export const CodeBlock = memo(
     const preRef = useRef<HTMLPreElement>(null);
     const copyToClipboard = useClipboard();
     const featureFlags = useFeatureFlags();
+    const { isDarkMode } = useCunninghamTheme();
 
     const getCodeContent = (): string => {
       const code = preRef.current?.querySelector('code');
@@ -144,6 +125,7 @@ export const CodeBlock = memo(
       >
         <CodeBlockActions
           onCopy={handleCopy}
+          isDarkMode={isDarkMode}
           onDownload={
             featureFlags.code_download_enabled ? handleDownload : undefined
           }
@@ -163,7 +145,7 @@ export const CodeBlock = memo(
               whiteSpace: 'pre',
               margin: 0,
               padding: '1rem',
-              backgroundColor: 'var(--c--theme--colors--greyscale-800)',
+              backgroundColor: 'var(--c--globals--colors--gray-800)',
               width: 'max-content',
               minWidth: '100%',
               overflow: 'visible',
