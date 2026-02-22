@@ -521,6 +521,15 @@ const arePropsEqual = (
   prevProps: MessageItemProps,
   nextProps: MessageItemProps,
 ): boolean => {
+  // Always re-render during streaming for the last assistant message
+  // so that reasoning content and tool invocations update in real-time
+  if (
+    nextProps.isLastAssistantMessage &&
+    (nextProps.status === 'streaming' || nextProps.status === 'submitted')
+  ) {
+    return false;
+  }
+
   // Always re-render if message content changed
   if (prevProps.message.id !== nextProps.message.id) {
     return false;
@@ -532,10 +541,10 @@ const arePropsEqual = (
     return false;
   }
 
-  // Check parts changes (for streaming tool invocations and sources)
-  const prevPartsLength = prevProps.message.parts?.length ?? 0;
-  const nextPartsLength = nextProps.message.parts?.length ?? 0;
-  if (prevPartsLength !== nextPartsLength) {
+  // Check parts changes (for streaming tool invocations, sources, and reasoning)
+  const prevParts = prevProps.message.parts;
+  const nextParts = nextProps.message.parts;
+  if (prevParts !== nextParts) {
     return false;
   }
 
