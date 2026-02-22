@@ -98,6 +98,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| STREAM_RETRY_MAX_ATTEMPTS                       | Number of automatic retry attempts on LLM streaming errors (0 = disabled). Uses exponential backoff                               | 0                                                       |
 
 
 ## conversations-frontend image
