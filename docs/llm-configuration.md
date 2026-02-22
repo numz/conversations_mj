@@ -364,6 +364,31 @@ Icons can be provided as base64-encoded PNG images. For long strings, you can sp
 }
 ```
 
+### Tool Display Names
+
+The `tool_display_names` field is a top-level configuration option that maps internal tool names
+to human-readable labels displayed in the frontend. This makes tool invocations more understandable
+for users who see tool calls in the chat.
+
+```json
+{
+  "providers": [],
+  "models": [],
+  "tool_display_names": {
+    "web_search_brave": "Web Search",
+    "web_search_brave_with_document_backend": "Web Search",
+    "document_search_rag": "Document Search",
+    "document_list": "List Documents",
+    "document_get_content": "Read Document",
+    "document_analyze": "Analyze Documents"
+  }
+}
+```
+
+The display names are exposed to the frontend via the `/api/v1.0/config/` endpoint in the
+`tool_display_names` field. If a tool has no display name configured, the frontend falls back
+to showing the raw tool name.
+
 ## Validation
 
 The configuration is validated when loaded. Common validation errors include:
