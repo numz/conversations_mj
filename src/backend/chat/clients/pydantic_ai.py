@@ -185,6 +185,7 @@ class StreamingState:
     tool_is_streaming: bool = False
     ui_sources: List[SourceUIPart] = dataclasses.field(default_factory=list)
     model_response_message_id: Optional[str] = None
+    ignored_thinking_indexes: set = dataclasses.field(default_factory=set)
 
 
 @dataclasses.dataclass
@@ -770,6 +771,8 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                     args=json.loads(part.args) if part.args else {},
                 )
             elif isinstance(part, ThinkingPart):
+                if settings.VLLM_THINKING_DEDUP_ENABLED and getattr(part, "id", None) == "reasoning_content":
+                    continue
                 yield events_v4.ReasoningPart(reasoning=part.content)
             else:
                 logger.warning("Unknown part type: %s %s", type(part), dataclasses.asdict(part))
@@ -787,7 +790,10 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                             tool_name=event.part.tool_name,
                         )
                     elif isinstance(event.part, ThinkingPart):
-                        yield events_v4.ReasoningPart(reasoning=event.part.content)
+                        if settings.VLLM_THINKING_DEDUP_ENABLED and getattr(event.part, "id", None) == "reasoning_content":
+                            state.ignored_thinking_indexes.add(event.index)
+                        else:
+                            yield events_v4.ReasoningPart(reasoning=event.part.content)
                 elif isinstance(event, PartDeltaEvent):
                     if isinstance(event.delta, TextPartDelta):
                         yield events_v4.TextPart(text=event.delta.content_delta)
@@ -798,7 +804,10 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                             args_text_delta=event.delta.args_delta,
                         )
                     elif isinstance(event.delta, ThinkingPartDelta):
-                        yield events_v4.ReasoningPart(reasoning=event.delta.content_delta)
+                        if settings.VLLM_THINKING_DEDUP_ENABLED and event.index in state.ignored_thinking_indexes:
+                            pass
+                        else:
+                            yield events_v4.ReasoningPart(reasoning=event.delta.content_delta)
 
     async def _handle_model_request_node(
         self, node, run_ctx, state: StreamingState
