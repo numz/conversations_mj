@@ -259,7 +259,13 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
         processingLabel={processingLabel}
       />
     );
-  }, [message.parts, message.id, isCurrentlyStreaming, isLastAssistantMessage, t]);
+  }, [
+    message.parts,
+    message.id,
+    isCurrentlyStreaming,
+    isLastAssistantMessage,
+    t,
+  ]);
 
   // Memoize the streaming content split to avoid recreating components in JSX
   const { completedBlocks, pending } = React.useMemo(() => {
