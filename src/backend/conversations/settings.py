@@ -1041,6 +1041,13 @@ USER QUESTION:
     FEEDBACK_TCHAP_URL = values.Value(
         default="", environ_name="FEEDBACK_TCHAP_URL", environ_prefix=None,
     )
+
+    # Feature flags for optional features
+    MARKDOWN_SANITIZE_ENABLED = values.BooleanValue(
+        default=True,
+        environ_name="MARKDOWN_SANITIZE_ENABLED",
+        environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,

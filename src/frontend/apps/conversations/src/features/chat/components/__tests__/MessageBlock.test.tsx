@@ -20,6 +20,8 @@ jest.mock('../../utils/shiki', () => ({
   getHighlighter: () => Promise.resolve({}),
 }));
 jest.mock('rehype-katex', () => () => {});
+jest.mock('rehype-raw', () => () => {});
+jest.mock('rehype-sanitize', () => () => {});
 jest.mock('remark-gfm', () => () => {});
 jest.mock('remark-math', () => () => {});
 
@@ -121,6 +123,63 @@ describe('CompletedMarkdownBlock', () => {
     });
 
     expect(screen.getByText(/Special chars:/)).toBeInTheDocument();
+  });
+
+  it('renders with sanitize=true', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <CompletedMarkdownBlock content="Sanitized content" sanitize={true} />,
+      );
+    });
+
+    expect(screen.getByText('Sanitized content')).toBeInTheDocument();
+  });
+
+  it('renders with sanitize=false', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <CompletedMarkdownBlock
+          content="Unsanitized content"
+          sanitize={false}
+        />,
+      );
+    });
+
+    expect(screen.getByText('Unsanitized content')).toBeInTheDocument();
+  });
+
+  it('renders with sanitize=undefined (default)', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <CompletedMarkdownBlock content="Default sanitize" />,
+      );
+    });
+
+    expect(screen.getByText('Default sanitize')).toBeInTheDocument();
+  });
+
+  it('does not re-render when content and sanitize are the same', async () => {
+    let rerender: ReturnType<typeof render>['rerender'];
+    await act(async () => {
+      ({ rerender } = renderWithProviders(
+        <CompletedMarkdownBlock content="Same content" sanitize={true} />,
+      ));
+    });
+
+    const firstRender = screen.getByTestId('markdown-content');
+
+    rerender!(
+      <CunninghamProvider>
+        <Suspense fallback={null}>
+          <CompletedMarkdownBlock content="Same content" sanitize={true} />
+        </Suspense>
+      </CunninghamProvider>,
+    );
+
+    const secondRender = screen.getByTestId('markdown-content');
+
+    // Same content + same sanitize = memoized, no re-render
+    expect(firstRender).toBe(secondRender);
   });
 });
 
