@@ -4,6 +4,7 @@ import { css } from 'styled-components';
 
 import { Box, Icon, Text } from '@/components';
 import { PromptSuggestion, useConfig } from '@/core/config/api/useConfig';
+import { useCunninghamTheme } from '@/cunningham/useCunninghamTheme';
 
 interface PromptSuggestionsProps {
   onSelect: (prompt: string) => void;
@@ -48,6 +49,7 @@ const getDefaultSuggestions = (
 export const PromptSuggestions = ({ onSelect }: PromptSuggestionsProps) => {
   const { t } = useTranslation();
   const { data: config } = useConfig();
+  const { isDarkMode } = useCunninghamTheme();
 
   // Use configured suggestions if available, otherwise use translated defaults
   const suggestions = useMemo(() => {
@@ -87,8 +89,11 @@ export const PromptSuggestions = ({ onSelect }: PromptSuggestionsProps) => {
             align-items: flex-start;
             gap: 8px;
             padding: 12px 16px;
-            background: #f8f9fb;
-            border: 1px solid #e5e7eb;
+            background: var(
+              --c--globals--colors--gray-${isDarkMode ? '800' : '100'}
+            );
+            border: 1px solid
+              var(--c--globals--colors--gray-${isDarkMode ? '700' : '200'});
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -97,14 +102,20 @@ export const PromptSuggestions = ({ onSelect }: PromptSuggestionsProps) => {
             max-width: 240px;
 
             &:hover {
-              background: #eef1f4;
-              border-color: #d1d5db;
+              background: var(
+                --c--globals--colors--gray-${isDarkMode ? '750' : '150'}
+              );
+              border-color: var(
+                --c--globals--colors--gray-${isDarkMode ? '650' : '250'}
+              );
               transform: translateY(-2px);
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+              box-shadow: 0 4px 12px
+                rgba(0, 0, 0, ${isDarkMode ? '0.25' : '0.08'});
             }
 
             &:focus {
-              outline: 2px solid var(--c--theme--colors--primary-500);
+              outline: 2px solid
+                var(--c--globals--colors--brand-500);
               outline-offset: 2px;
             }
 
@@ -127,12 +138,12 @@ export const PromptSuggestions = ({ onSelect }: PromptSuggestionsProps) => {
             <Icon
               iconName={suggestion.icon}
               $size="20px"
-              $css="color: var(--c--theme--colors--primary-500);"
+              $css={`color: var(--c--globals--colors--brand-${isDarkMode ? '300' : '500'});`}
             />
             <Text
               $weight="600"
               $size="sm"
-              $css="color: var(--c--theme--colors--greyscale-800);"
+              $css={`color: var(--c--globals--colors--gray-${isDarkMode ? '150' : '800'});`}
             >
               {suggestion.title}
             </Text>
@@ -140,7 +151,9 @@ export const PromptSuggestions = ({ onSelect }: PromptSuggestionsProps) => {
           <Text
             $size="xs"
             $css={css`
-              color: var(--c--theme--colors--greyscale-600);
+              color: var(
+                --c--globals--colors--gray-${isDarkMode ? '300' : '600'}
+              );
               display: -webkit-box;
               -webkit-line-clamp: 2;
               -webkit-box-orient: vertical;
