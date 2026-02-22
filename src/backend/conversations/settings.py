@@ -27,7 +27,12 @@ from sentry_sdk.integrations.logging import ignore_logger
 
 from core.feature_flags.flags import FeatureFlags, FeatureToggle
 
-from chat.llm_configuration import cached_load_llm_configuration, load_llm_configuration
+from chat.llm_configuration import (
+    cached_load_llm_configuration,
+    cached_load_tool_display_names,
+    load_llm_configuration,
+    load_tool_display_names,
+)
 from conversations.brave_settings import BraveSettings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -1092,6 +1097,11 @@ USER QUESTION:
         """
         return lazy(load_llm_configuration, dict)(self._llm_configuration_file_path)
 
+    @property
+    def TOOL_DISPLAY_NAMES(self):
+        """Return the tool display names from the LLM configuration."""
+        return lazy(load_tool_display_names, dict)(self._llm_configuration_file_path)
+
     @pristinemethod
     def POSTHOG_MW_REQUEST_FILTER(self, request):  # pylint: disable=bad-staticmethod-argument, invalid-name, unused-argument
         """Return a function that filters requests to be sent to Posthog."""
@@ -1392,6 +1402,11 @@ class Production(Base):
         The configuration is lazy loaded to allow settings access and cached to reduce footprint.
         """
         return lazy(cached_load_llm_configuration, dict)(self._llm_configuration_file_path)
+
+    @property
+    def TOOL_DISPLAY_NAMES(self):
+        """Return the tool display names from the LLM configuration (cached)."""
+        return lazy(cached_load_tool_display_names, dict)(self._llm_configuration_file_path)
 
 
 class Feature(Production):

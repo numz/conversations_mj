@@ -26,6 +26,11 @@ export interface FeatureFlagsCustom {
   [key: string]: boolean;
 }
 
+// Tool display names for human-readable tool labels
+export interface ToolDisplayNames {
+  [toolName: string]: string;
+}
+
 export interface ConfigResponse {
   ACTIVATION_REQUIRED: boolean;
   CRISP_WEBSITE_ID?: string;
@@ -43,6 +48,7 @@ export interface ConfigResponse {
   theme_customization?: ThemeCustomization;
   chat_upload_accept?: string;
   feature_flags_custom?: FeatureFlagsCustom;
+  tool_display_names?: ToolDisplayNames;
 }
 
 const LOCAL_STORAGE_KEY = 'conversations_config';

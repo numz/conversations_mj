@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
-import { useFeatureFlags } from '@/core/config/api';
+import { useConfig, useFeatureFlags } from '@/core/config/api';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -56,6 +56,9 @@ export const Chat = ({
   } = useChatPreferencesStore();
 
   const { data: llmConfig } = useLLMConfiguration();
+  const { data: config } = useConfig();
+  const toolDisplayNames: Record<string, string> =
+    (config?.tool_display_names as Record<string, string> | undefined) ?? {};
   const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
 
   const [conversationId, setConversationId] = useState(initialConversationId);
@@ -651,6 +654,7 @@ export const Chat = ({
                 conversationId={conversationId}
                 isSourceOpen={isSourceOpen}
                 isMobile={isMobile}
+                toolDisplayNames={toolDisplayNames}
                 onCopyToClipboard={copyToClipboard}
                 onOpenSources={openSources}
                 getMetadata={getMetadata}

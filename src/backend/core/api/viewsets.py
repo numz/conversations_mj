@@ -227,6 +227,9 @@ class ConfigView(drf.views.APIView):
             "reasoning_box_enabled": settings.REASONING_BOX_ENABLED,
         }
 
+        # Tool display names for human-readable tool labels
+        dict_settings["tool_display_names"] = dict(settings.TOOL_DISPLAY_NAMES)
+
         dict_settings["theme_customization"] = self._load_theme_customization()
 
         dict_settings["chat_upload_accept"] = ",".join(settings.RAG_FILES_ACCEPTED_FORMATS)

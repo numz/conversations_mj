@@ -171,6 +171,7 @@ export interface MessageItemProps {
   conversationId: string | undefined;
   isSourceOpen: string | null;
   isMobile: boolean;
+  toolDisplayNames: Record<string, string>;
   onCopyToClipboard: (content: string) => void;
   onOpenSources: (messageId: string) => void;
   getMetadata: (url: string) => SourceMetadata | undefined;
@@ -186,6 +187,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   conversationId,
   isSourceOpen,
   isMobile,
+  toolDisplayNames,
   onCopyToClipboard,
   onOpenSources,
   getMetadata,
@@ -245,6 +247,21 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     let processingLabel: string | null = null;
     if (isCurrentlyStreaming && isLastAssistantMessage) {
       processingLabel = t('Thinking...');
+
+      const toolInvocations = message.parts?.filter(
+        (part) =>
+          part.type === 'tool-invocation' &&
+          part.toolInvocation.toolName !== 'document_parsing',
+      );
+      const lastToolInvocation =
+        toolInvocations?.[toolInvocations.length - 1];
+      if (lastToolInvocation?.type === 'tool-invocation') {
+        const toolName = lastToolInvocation.toolInvocation.toolName;
+        processingLabel =
+          toolDisplayNames[toolName] ||
+          toolDisplayNames['_default'] ||
+          t('Search...');
+      }
     }
 
     if (!combinedReasoning && !processingLabel) {
@@ -264,6 +281,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     message.id,
     isCurrentlyStreaming,
     isLastAssistantMessage,
+    toolDisplayNames,
     t,
   ]);
 
