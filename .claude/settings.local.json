@@ -18,7 +18,8 @@
       "Bash(sleep 6 && cd /c/NUMZ/DEVMJ/conversations-fork && docker compose exec app-dev python -c \"\nimport urllib.request, json\nr = urllib.request.urlopen\\('http://localhost:8000/api/v1.0/config/', timeout=10\\)\ndata = json.loads\\(r.read\\(\\).decode\\(\\)\\)\nprint\\(json.dumps\\(data.get\\('feature_flags_custom', {}\\), indent=2\\)\\)\n\" 2>&1)",
       "mcp__chrome-devtools__fill",
       "mcp__chrome-devtools__list_network_requests",
-      "mcp__chrome-devtools__evaluate_script"
+      "mcp__chrome-devtools__evaluate_script",
+      "Bash(cd /c/NUMZ/DEVMJ/conversations-fork && git merge feat/code-download --no-edit 2>&1)"
     ]
   }
 }

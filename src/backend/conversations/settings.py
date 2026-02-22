@@ -1048,6 +1048,13 @@ USER QUESTION:
         environ_name="MARKDOWN_SANITIZE_ENABLED",
         environ_prefix=None,
     )
+
+    CODE_DOWNLOAD_ENABLED = values.BooleanValue(
+        default=True,
+        environ_name="CODE_DOWNLOAD_ENABLED",
+        environ_prefix=None,
+    )
+
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,

@@ -230,6 +230,7 @@ class ConfigView(drf.views.APIView):
             "enable_table_export": settings.ENABLE_TABLE_EXPORT,
             "prompt_suggestions_enabled": settings.PROMPT_SUGGESTIONS_ENABLED,
             "markdown_sanitize_enabled": settings.MARKDOWN_SANITIZE_ENABLED,
+            "code_download_enabled": settings.CODE_DOWNLOAD_ENABLED,
         }
 
         # Tool display names for human-readable tool labels
