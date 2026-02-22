@@ -376,7 +376,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           $maxWidth="100%"
           $padding={`${message.role === 'user' ? '12px' : '0'}`}
           $margin={{ vertical: 'base' }}
-          $background={`${message.role === 'user' ? 'var(--c--contextuals--background--semantic--neutral--tertiary)' : 'var(--c--contextuals--background--surface--primary)'}`}
+          $background={`${message.role === 'user' ? 'var(--c--contextuals--background--semantic--neutral--tertiary)' : 'transparent'}`}
           $css={`
             display: inline-block;
             float: right;
