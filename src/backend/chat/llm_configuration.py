@@ -125,6 +125,7 @@ class LLModel(BaseModel):
     supports_streaming: bool | None = None
     system_prompt: SettingEnvValue
     tools: list[str]
+    tool_instructions: dict[str, str] | None = None
 
     @field_validator("tools", mode="before")
     @classmethod
