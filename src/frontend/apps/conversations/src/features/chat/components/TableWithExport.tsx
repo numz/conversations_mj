@@ -5,6 +5,7 @@ import { css } from 'styled-components';
 
 import { Box, Icon, Text } from '@/components';
 import { useFeatureFlags } from '@/core/config';
+import { useCunninghamTheme } from '@/cunningham/useCunninghamTheme';
 
 import { exportTableToCSV, parseHtmlTable } from '../utils/exportTable';
 
@@ -21,6 +22,7 @@ export const TableWithExport = memo(
     const tableRef = useRef<HTMLTableElement>(null);
     const sizingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     const featureFlags = useFeatureFlags();
+    const { isDarkMode } = useCunninghamTheme();
 
     useEffect(() => {
       if (!tableRef.current) {
@@ -86,27 +88,41 @@ export const TableWithExport = memo(
                 align-items: center;
                 gap: 4px;
                 padding: 4px 8px;
-                background: var(--c--globals--colors--gray-700);
-                border: 1px solid var(--c--globals--colors--gray-750);
+                background: var(
+                  --c--globals--colors--gray-${isDarkMode ? '200' : '700'}
+                );
+                border: 1px solid
+                  var(
+                    --c--globals--colors--gray-${isDarkMode ? '300' : '750'}
+                  );
                 border-radius: 6px;
                 cursor: pointer;
                 font-size: 12px;
-                color: white;
+                color: var(
+                  --c--globals--colors--gray-${isDarkMode ? '900' : '100'}
+                );
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
                 transition: all 0.15s ease;
 
                 &:hover {
-                  background: var(--c--globals--colors--gray-800);
-                  border-color: var(--c--globals--colors--gray-850);
+                  background: var(
+                    --c--globals--colors--gray-${isDarkMode ? '300' : '800'}
+                  );
+                  border-color: var(
+                    --c--globals--colors--gray-${isDarkMode ? '350' : '850'}
+                  );
                 }
               `}
             >
               <Icon
                 iconName="download"
                 $size="14px"
-                $css="font-family: 'Material Symbols Outlined' !important; color: white !important;"
+                $css={`font-family: 'Material Symbols Outlined' !important; color: var(--c--globals--colors--gray-${isDarkMode ? '900' : '100'}) !important;`}
               />
-              <Text $size="xs" $css="color: white !important;">
+              <Text
+                $size="xs"
+                $css={`color: var(--c--globals--colors--gray-${isDarkMode ? '900' : '100'}) !important;`}
+              >
                 {t('Export CSV')}
               </Text>
             </Box>
