@@ -8,15 +8,19 @@ import { useEffect, useRef, useState } from 'react';
  * @param text - The final text to display
  * @param key - A unique key (e.g., conversation ID) to track changes
  * @param speed - Milliseconds per character (default: 25ms)
+ * @param animateOnMount - If true, animate from empty on first render (default: false)
  * @returns The text to display (animated or final)
  */
 export const useTypewriter = (
   text: string,
   key: string,
   speed: number = 25,
+  animateOnMount: boolean = false,
 ): string => {
-  const [displayedText, setDisplayedText] = useState(text);
-  const previousTextRef = useRef(text);
+  const [displayedText, setDisplayedText] = useState(
+    animateOnMount ? '' : text,
+  );
+  const previousTextRef = useRef(animateOnMount ? '' : text);
   const previousKeyRef = useRef(key);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 

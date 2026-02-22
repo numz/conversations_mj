@@ -41,7 +41,12 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
   const featureFlags = useFeatureFlags();
 
   const titleText = conversation.title || t('Untitled conversation');
-  const animatedTitle = useTypewriter(titleText, conversation.id, 25);
+  const animatedTitle = useTypewriter(
+    titleText,
+    conversation.id,
+    25,
+    isCurrentConversation,
+  );
   const title =
     featureFlags.inline_rename_enabled && isCurrentConversation
       ? animatedTitle
