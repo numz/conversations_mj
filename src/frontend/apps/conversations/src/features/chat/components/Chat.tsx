@@ -222,6 +222,7 @@ export const Chat = ({
     status,
     stop: stopChat,
     setMessages,
+    usageByMessageId,
   } = useChat({
     id: conversationId,
     initialMessages: initialConversationMessages,
@@ -684,6 +685,7 @@ export const Chat = ({
               <MessageItem
                 key={message.id}
                 message={message}
+                usage={usageByMessageId.get(message.id)}
                 isLastMessage={index === messages.length - 1}
                 isLastAssistantMessage={
                   message.role === 'assistant' &&
