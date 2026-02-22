@@ -232,6 +232,7 @@ class ConfigView(drf.views.APIView):
             "markdown_sanitize_enabled": settings.MARKDOWN_SANITIZE_ENABLED,
             "code_download_enabled": settings.CODE_DOWNLOAD_ENABLED,
             "conversation_error_redirect_enabled": settings.CONVERSATION_ERROR_REDIRECT_ENABLED,
+            "rich_clipboard_enabled": settings.RICH_CLIPBOARD_ENABLED,
         }
 
         # Tool display names for human-readable tool labels

@@ -43,9 +43,15 @@ export const Chat = ({
   initialConversationId: string | undefined;
 }) => {
   const { t } = useTranslation();
-  const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
   const featureFlags = useFeatureFlags();
+  const copyToClipboard = useClipboard(featureFlags.rich_clipboard_enabled);
+  const handleCopy = useCallback(
+    (content: string) => {
+      void copyToClipboard(content);
+    },
+    [copyToClipboard],
+  );
 
   const streamProtocol = 'data'; // or 'text'
 
@@ -690,7 +696,7 @@ export const Chat = ({
                 isSourceOpen={isSourceOpen}
                 isMobile={isMobile}
                 toolDisplayNames={toolDisplayNames}
-                onCopyToClipboard={copyToClipboard}
+                onCopyToClipboard={handleCopy}
                 onOpenSources={openSources}
                 getMetadata={getMetadata}
               />
