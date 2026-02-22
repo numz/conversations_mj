@@ -90,7 +90,11 @@ export const useCunninghamTheme = create<ThemeStore>()(
               : 'dsfr'
             : theme;
 
+        // Use persisted isDarkMode from this store (already hydrated),
+        // fall back to preferences store, then to theme hint
+        const currentState = useCunninghamTheme.getState();
         const isDarkMode =
+          currentState.isDarkMode ??
           getIsDarkModeFromPreferences() ??
           (theme === 'dark' || theme === 'dsfr-dark');
 
@@ -148,15 +152,19 @@ export const useCunninghamTheme = create<ThemeStore>()(
       name: 'cunningham-theme',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       storage: safeLocalStorage as any,
-      partialize: (state) => ({ isDarkMode: state.isDarkMode }),
+      partialize: (state) => ({
+        isDarkMode: state.isDarkMode,
+        baseTheme: state.baseTheme,
+      }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           console.error('[useCunninghamTheme] Rehydration error:', error);
           return;
         }
-        if (state) {
-          state.isDarkMode = getIsDarkModeFromPreferences();
-        }
+        // Don't overwrite the hydrated isDarkMode — it was persisted
+        // correctly. The old code called getIsDarkModeFromPreferences()
+        // here, but useChatPreferencesStore may not be hydrated yet,
+        // causing isDarkMode to be reset to false on every refresh.
       },
     },
   ),
