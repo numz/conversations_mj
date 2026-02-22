@@ -18,30 +18,22 @@ a:focus-visible,
   outline-offset: 2px;
 }
 
-main ::-webkit-scrollbar,
-aside ::-webkit-scrollbar,
-.ReactModalPortal ::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 20px;
 }
 
-main ::-webkit-scrollbar-track,
-aside ::-webkit-scrollbar-track,
-.ReactModalPortal ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background-color: transparent;
 }
 
-main ::-webkit-scrollbar-thumb,
-aside ::-webkit-scrollbar-thumb,
-.ReactModalPortal ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: var(--c--contextuals--border--semantic--neutral--default);
   border-radius: 20px;
   border: 6px solid transparent;
   background-clip: content-box;
 }
 
-main ::-webkit-scrollbar-thumb:hover,
-aside ::-webkit-scrollbar-thumb:hover,
-.ReactModalPortal ::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background-color: var(--c--contextuals--content--semantic--neutral--tertiary);
 }
 
