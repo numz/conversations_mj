@@ -102,6 +102,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | DOCUMENT_CONTENT_MAX_SIZE                       | Maximum document size in bytes for full-text retrieval via document tools. Larger documents should use RAG search                  | 200000                                                  |
 | REASONING_BOX_ENABLED                           | Show a collapsible box displaying the model's chain-of-thought reasoning. See [Feature Flags](feature-flags.md)                   | true                                                    |
 | INLINE_RENAME_ENABLED                           | Enable inline conversation renaming with typewriter animation (replaces modal). See [Feature Flags](feature-flags.md)             | true                                                    |
+| ENABLE_TABLE_EXPORT                             | Add a CSV export button on markdown tables in chat messages. See [Feature Flags](feature-flags.md)                                | true                                                    |
 
 
 ## conversations-frontend image

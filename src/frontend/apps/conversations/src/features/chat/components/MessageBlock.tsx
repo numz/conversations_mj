@@ -8,6 +8,7 @@ import remarkMath from 'remark-math';
 
 import { Text } from '@/components';
 import { CodeBlock } from '@/features/chat/components/CodeBlock';
+import { TableWithExport } from '@/features/chat/components/TableWithExport';
 
 // Memoized markdown plugins - created once at module level
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,13 @@ const MARKDOWN_COMPONENTS: Components = {
     children,
     ...props
   }) => <CodeBlock {...props}>{children}</CodeBlock>,
+
+  table: ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    children,
+    ...props
+  }) => <TableWithExport {...props}>{children}</TableWithExport>,
 };
 
 export const CompletedMarkdownBlock = React.memo(

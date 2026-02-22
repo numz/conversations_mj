@@ -1048,6 +1048,13 @@ USER QUESTION:
         default=55, environ_name="KEEPALIVE_INTERVAL", environ_prefix=None
     )
 
+    # Feature flag: table export CSV
+    ENABLE_TABLE_EXPORT = values.BooleanValue(
+        default=True,
+        environ_name="ENABLE_TABLE_EXPORT",
+        environ_prefix=None,
+    )
+
     # pylint: disable=invalid-name
     @property
     def ENVIRONMENT(self):

@@ -227,6 +227,7 @@ class ConfigView(drf.views.APIView):
             "reasoning_box_enabled": settings.REASONING_BOX_ENABLED,
             "conversation_grouping_enabled": settings.CONVERSATION_GROUPING_ENABLED,
             "inline_rename_enabled": settings.INLINE_RENAME_ENABLED,
+            "enable_table_export": settings.ENABLE_TABLE_EXPORT,
         }
 
         # Tool display names for human-readable tool labels
