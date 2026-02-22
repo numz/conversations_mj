@@ -49,7 +49,7 @@ export const ToggleSwitch = ({
             left: ${checked ? '22px' : '2px'};
             width: 20px;
             height: 20px;
-            background-color: white;
+            background-color: var(--c--contextuals--background--surface--primary);
             border-radius: 50%;
             transition: left 0.2s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

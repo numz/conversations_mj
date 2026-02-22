@@ -147,7 +147,7 @@ export const Footer = () => {
           $padding={{ top: 'tiny' }}
           $css={`
             flex-wrap: wrap;
-            border-top: 1px solid var(--c--theme--colors--greyscale-200); 
+            border-top: 1px solid var(--c--contextuals--border--semantic--neutral--default);
             column-gap: 1rem;
             row-gap: .5rem;
           `}
@@ -162,7 +162,7 @@ export const Footer = () => {
                   padding-right: 1rem;
                   &:not(:last-child) {
                     box-shadow: inset -1px 0px 0px 0px
-                      var(--c--theme--colors--greyscale-200);
+                      var(--c--contextuals--border--semantic--neutral--default);
                   }
                 `}
               >

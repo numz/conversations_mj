@@ -115,7 +115,7 @@ export const InputChatActions = memo(
 
     const webSearchIconCss = useMemo(
       () =>
-        `color: ${forceWebSearch ? 'var(--c--theme--colors--primary-600) !important' : 'var(--c--theme--colors--greyscale-600)'}`,
+        `color: ${forceWebSearch ? 'var(--c--contextuals--content--semantic--brand--primary) !important' : 'var(--c--contextuals--content--semantic--neutral--secondary)'}`,
       [forceWebSearch],
     );
 

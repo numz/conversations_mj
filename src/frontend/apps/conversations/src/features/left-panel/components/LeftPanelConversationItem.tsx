@@ -16,7 +16,7 @@ type LeftPanelConversationItemProps = {
 const linkStyles = css`
   overflow: auto;
   flex-grow: 1;
-  color: var(--c--theme--colors--greyscale-900);
+  color: var(--c--contextuals--content--semantic--neutral--primary);
 `;
 
 const getBoxStyles = (
