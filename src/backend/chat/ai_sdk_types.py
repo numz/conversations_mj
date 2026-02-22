@@ -414,6 +414,22 @@ class LanguageModelUsage(BaseModel):
     totalTokens: int
 
 
+class ExtendedMetrics(BaseModel):
+    """
+    Extended metrics for a message (tokens, latency, cost, carbon).
+    Stored in UIMessage.annotations for persistence.
+    """
+
+    type: Literal["extended_metrics"] = "extended_metrics"
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    latency_ms: int
+    cost: Optional[float] = None
+    cost_currency: Optional[str] = None
+    carbon_g: Optional[float] = None
+
+
 class AssistantMessageContentText(BaseModel):
     """
     Represents text content in an assistant message.

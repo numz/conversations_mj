@@ -11,6 +11,7 @@ import {
 } from '@/features/chat/components/MessageBlock';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
+import { UsageMetrics } from '@/features/chat/components/UsageMetrics';
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
@@ -456,6 +457,11 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
               </Box>
             )}
 
+          {message.role === 'assistant' &&
+            !(isLastAssistantMessage && status === 'streaming') && (
+              <UsageMetrics message={message} />
+            )}
+
           {isSourceOpen === message.id && sourceParts.length > 0 && (
             <Box
               $css={`
@@ -494,6 +500,13 @@ const arePropsEqual = (
   const prevPartsLength = prevProps.message.parts?.length ?? 0;
   const nextPartsLength = nextProps.message.parts?.length ?? 0;
   if (prevPartsLength !== nextPartsLength) {
+    return false;
+  }
+
+  // Check annotations (for extended metrics)
+  const prevAnnotationsLength = prevProps.message.annotations?.length ?? 0;
+  const nextAnnotationsLength = nextProps.message.annotations?.length ?? 0;
+  if (prevAnnotationsLength !== nextAnnotationsLength) {
     return false;
   }
 

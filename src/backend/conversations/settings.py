@@ -1020,6 +1020,25 @@ USER QUESTION:
         default=55, environ_name="KEEPALIVE_INTERVAL", environ_prefix=None
     )
 
+    # Extended Metrics (Feature 17)
+    EXTENDED_METRICS_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="EXTENDED_METRICS_ENABLED",
+        environ_prefix=None,
+    )
+    # JSON mapping: {"model-name": {"input": 0.003, "output": 0.015, "currency": "EUR"}}
+    EXTENDED_METRICS_COST_MAPPING = values.Value(
+        default="{}",
+        environ_name="EXTENDED_METRICS_COST_MAPPING",
+        environ_prefix=None,
+    )
+    # gCO2 per token (total tokens)
+    EXTENDED_METRICS_CARBON_COEFFICIENT = values.FloatValue(
+        default=0.0,
+        environ_name="EXTENDED_METRICS_CARBON_COEFFICIENT",
+        environ_prefix=None,
+    )
+
     # pylint: disable=invalid-name
     @property
     def ENVIRONMENT(self):
