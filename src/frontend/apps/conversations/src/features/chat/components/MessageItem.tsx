@@ -276,7 +276,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
         width: 100%;
         margin: auto;
         margin-bottom: ${isLastAssistantMessage ? '30px' : '0px'};
-        color: var(--c--theme--colors--greyscale-850);
+        color: var(--c--contextuals--content--semantic--neutral--primary);
         padding-left: 12px;
         padding-right: 12px;
         max-width: 750px;
@@ -304,7 +304,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           $maxWidth="100%"
           $padding={`${message.role === 'user' ? '12px' : '0'}`}
           $margin={{ vertical: 'base' }}
-          $background={`${message.role === 'user' ? '#EEF1F4' : 'white'}`}
+          $background={`${message.role === 'user' ? 'var(--c--contextuals--background--semantic--neutral--tertiary)' : 'var(--c--contextuals--background--surface--primary)'}`}
           $css={`
             display: inline-block;
             float: right;
@@ -382,7 +382,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           {message.role === 'assistant' &&
             !(isLastAssistantMessage && status === 'streaming') && (
               <Box
-                $css="color: #222631; font-size: 12px;"
+                $css="color: var(--c--contextuals--content--semantic--neutral--primary); font-size: 12px;"
                 $direction="row"
                 $align="center"
                 $justify="space-between"
