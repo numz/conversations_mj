@@ -86,8 +86,8 @@ export const TableWithExport = memo(
                 align-items: center;
                 gap: 4px;
                 padding: 4px 8px;
-                background: var(--c--theme--colors--greyscale-700);
-                border: 1px solid var(--c--theme--colors--greyscale-750);
+                background: var(--c--globals--colors--gray-700);
+                border: 1px solid var(--c--globals--colors--gray-750);
                 border-radius: 6px;
                 cursor: pointer;
                 font-size: 12px;
@@ -96,8 +96,8 @@ export const TableWithExport = memo(
                 transition: all 0.15s ease;
 
                 &:hover {
-                  background: var(--c--theme--colors--greyscale-800);
-                  border-color: var(--c--theme--colors--greyscale-850);
+                  background: var(--c--globals--colors--gray-800);
+                  border-color: var(--c--globals--colors--gray-850);
                 }
               `}
             >
