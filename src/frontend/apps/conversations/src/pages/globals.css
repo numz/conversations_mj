@@ -78,11 +78,11 @@ nextjs-portal {
 }
 
 .c__button--tertiary {
-  border: 1px solid var(--c--theme--colors--greyscale-150) !important;
+  border: 1px solid var(--c--contextuals--border--semantic--neutral--tertiary) !important;
 }
 
 .c__button--bordered:focus {
-  border: 1px solid rgb(0 0 0 / 16%) !important;
+  border: 1px solid var(--c--contextuals--border--semantic--neutral--default) !important;
 }
 
 .c__button--primary.c__button--active {
@@ -91,7 +91,7 @@ nextjs-portal {
 
 .c__button--neutral {
   transition: background-color 0.4s !important;
-  color: var(--c--theme--colors--greyscale-550) !important;
+  color: var(--c--contextuals--content--semantic--neutral--secondary) !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   background-color: inherit !important;
@@ -164,8 +164,8 @@ nextjs-portal {
 }
 
 .feedbackButton:hover {
-  border-color: #b6d7fb;
-  background-color: #e7f2fd;
+  border-color: var(--c--contextuals--border--semantic--info--secondary);
+  background-color: var(--c--contextuals--background--semantic--info--tertiary);
   color: var(--c--contextuals--semantic--info-600) !important;
 }
 
@@ -174,11 +174,11 @@ nextjs-portal {
 }
 
 ul a {
-  color: var(--c--contextuals--semantic--greyscale-700) !important;
+  color: var(--c--contextuals--content--semantic--neutral--primary) !important;
 }
 
 ul a:hover {
-  color: var(--c--contextuals--semantic--primary-800) !important;
+  color: var(--c--contextuals--content--semantic--brand--primary) !important;
 }
 
 @keyframes fade-in {
@@ -296,7 +296,7 @@ figure[data-rehype-pretty-code-figure] {
 figure[data-rehype-pretty-code-figure] > pre {
   margin: 0;
   border-radius: 8px;
-  border: 1px solid var(--c--theme--colors--greyscale-500);
+  border: 1px solid var(--c--contextuals--border--semantic--neutral--default);
   padding: clamp(0.75rem, 2vw, 1rem);
   overflow-x: auto;
 }

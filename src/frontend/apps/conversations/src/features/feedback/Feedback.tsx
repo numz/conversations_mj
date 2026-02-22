@@ -117,7 +117,7 @@ const FeedbackButton = ({
         color: var(--c--contextuals--content--semantic--neutral--secondary) !important;
         
         &:hover {
-          border-color: #b6d7fb;
+          border-color: var(--c--contextuals--border--semantic--info--secondary);
           background-color: var(--c--contextuals--background--semantic--info--tertiary) !important;
           color: var(--c--contextuals--content--semantic--info--secondary) !important;
           span {

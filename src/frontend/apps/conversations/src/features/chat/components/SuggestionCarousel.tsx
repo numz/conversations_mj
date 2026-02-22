@@ -11,7 +11,7 @@ const WRAPPER_CSS = `position: absolute;
                   right: 1.5rem;
                   height: 1.5rem;
                   pointer-events: none;
-                  color: var(--c--theme--colors--greyscale-500);
+                  color: var(--c--contextuals--content--semantic--neutral--secondary);
                   font-size: 1rem;
                   font-family: inherit;
                   line-height: 1.5;

@@ -85,7 +85,7 @@ const DRAG_FADE_CSS = `
             height: 100vh;
             animation: fadeIn 0.3s;
             z-index: 999;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--c--contextuals--background--surface--tertiary);
             pointer-events: all;
           `;
 
@@ -102,7 +102,7 @@ const TEXTAREA_STYLE: React.CSSProperties = {
   overflowY: 'auto',
   transition: 'all 0.2s ease',
   borderRadius: '12px',
-  color: 'var(--c--theme--colors--greyscale-800)',
+  color: 'var(--c--contextuals--content--semantic--neutral--primary)',
   lineHeight: '1.5',
 };
 const SCROLL_DOWN_WRAPPER_CSS = `
