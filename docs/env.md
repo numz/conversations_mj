@@ -98,6 +98,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| REASONING_BOX_ENABLED                           | Show a collapsible box displaying the model's chain-of-thought reasoning. See [Feature Flags](feature-flags.md)                   | true                                                    |
 
 
 ## conversations-frontend image
