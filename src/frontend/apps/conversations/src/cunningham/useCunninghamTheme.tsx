@@ -62,6 +62,18 @@ const getIsDarkModeFromPreferences = (): boolean => {
   }
 };
 
+// Read isDarkMode directly from localStorage (sync, no hydration dependency)
+const getPersistedIsDarkMode = (): boolean | null => {
+  try {
+    const raw = localStorage.getItem('cunningham-theme');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { state?: { isDarkMode?: boolean } };
+    return parsed?.state?.isDarkMode ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const initialState: ThemeStore = {
   colorsTokens: defaultTokens.globals.colors,
   componentTokens: getComponentTokens(defaultTokens),
@@ -73,7 +85,7 @@ const initialState: ThemeStore = {
   theme: DEFAULT_THEME,
   baseTheme: DEFAULT_THEME,
   themeTokens: defaultTokens.globals,
-  isDarkMode: getIsDarkModeFromPreferences(),
+  isDarkMode: getPersistedIsDarkMode() ?? getIsDarkModeFromPreferences(),
   toggleDarkMode: () => {},
 };
 
@@ -90,11 +102,10 @@ export const useCunninghamTheme = create<ThemeStore>()(
               : 'dsfr'
             : theme;
 
-        // Use persisted isDarkMode from this store (already hydrated),
-        // fall back to preferences store, then to theme hint
-        const currentState = useCunninghamTheme.getState();
+        // Read isDarkMode directly from localStorage to avoid race condition
+        // with async Zustand hydration. Fall back to preferences store, then theme hint.
         const isDarkMode =
-          currentState.isDarkMode ??
+          getPersistedIsDarkMode() ??
           getIsDarkModeFromPreferences() ??
           (theme === 'dark' || theme === 'dsfr-dark');
 
