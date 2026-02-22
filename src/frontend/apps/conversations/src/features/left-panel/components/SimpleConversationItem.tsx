@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { css } from 'styled-components';
 
 import { Box, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config/api/useFeatureFlags';
 import { useCunninghamTheme } from '@/cunningham';
 import { ChatConversation } from '@/features/chat/types';
+import { formatRelativeTime } from '@/features/left-panel/utils/groupConversationsByDate';
 
 import BubbleIcon from '../assets/bubble-bold.svg';
 
@@ -20,6 +22,7 @@ const ItemTextCss = css`
 const bubbleContainerStyles = css`
   background-color: transparent;
   filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.05));
+  flex-shrink: 0;
 `;
 type SimpleConversationItemProps = {
   conversation: ChatConversation;
@@ -30,8 +33,9 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
   conversation,
   showAccesses: _showAccesses = false,
 }: SimpleConversationItemProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { spacingsTokens } = useCunninghamTheme();
+  const featureFlags = useFeatureFlags();
   const title = conversation.title || t('Untitled conversation');
 
   return (
@@ -39,6 +43,7 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
       $direction="row"
       $gap={spacingsTokens.sm}
       $overflow="auto"
+      $align="center"
       className="--docs--simple-doc-item"
     >
       <Box
@@ -49,7 +54,12 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
       >
         <BubbleIcon aria-label={t('Simple chat icon')} color="brand" />
       </Box>
-      <Box $justify="center" $overflow="auto">
+      <Box
+        $justify="center"
+        $overflow="auto"
+        $gap="2px"
+        $css="flex: 1; min-width: 0;"
+      >
         <Text
           aria-describedby="doc-title"
           aria-label={title}
@@ -59,6 +69,17 @@ export const SimpleConversationItem = memo(function SimpleConversationItem({
         >
           {title}
         </Text>
+        {featureFlags.conversation_grouping_enabled && (
+          <Text
+            $size="xs"
+            $css={css`
+              color: var(--c--theme--colors--greyscale-400);
+              font-weight: 400;
+            `}
+          >
+            {formatRelativeTime(conversation.updated_at, i18n.language)}
+          </Text>
+        )}
       </Box>
     </Box>
   );
