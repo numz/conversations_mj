@@ -222,8 +222,11 @@ class ConfigView(drf.views.APIView):
                 dict_settings[setting] = getattr(settings, setting)
 
         # Feature flags for optional custom features
-        # Individual flags are added by their respective features
-        dict_settings["feature_flags_custom"] = {}
+        dict_settings["feature_flags_custom"] = {
+            "prompt_suggestions_enabled": settings.PROMPT_SUGGESTIONS_ENABLED,
+        }
+
+        dict_settings["prompt_suggestions"] = settings.PROMPT_SUGGESTIONS
 
         dict_settings["theme_customization"] = self._load_theme_customization()
 

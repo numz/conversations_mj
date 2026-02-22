@@ -26,6 +26,13 @@ export interface FeatureFlagsCustom {
   [key: string]: boolean;
 }
 
+// Configurable prompt suggestion
+export interface PromptSuggestion {
+  icon: string;
+  title: string;
+  prompt: string;
+}
+
 export interface ConfigResponse {
   ACTIVATION_REQUIRED: boolean;
   CRISP_WEBSITE_ID?: string;
@@ -43,6 +50,7 @@ export interface ConfigResponse {
   theme_customization?: ThemeCustomization;
   chat_upload_accept?: string;
   feature_flags_custom?: FeatureFlagsCustom;
+  prompt_suggestions?: PromptSuggestion[];
 }
 
 const LOCAL_STORAGE_KEY = 'conversations_config';
