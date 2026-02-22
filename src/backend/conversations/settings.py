@@ -1034,7 +1034,13 @@ USER QUESTION:
     INLINE_RENAME_ENABLED = values.BooleanValue(
         default=True, environ_name="INLINE_RENAME_ENABLED", environ_prefix=None,
     )
-
+    # Feedback URLs - configurable links for user feedback
+    FEEDBACK_FORM_URL = values.Value(
+        default="", environ_name="FEEDBACK_FORM_URL", environ_prefix=None,
+    )
+    FEEDBACK_TCHAP_URL = values.Value(
+        default="", environ_name="FEEDBACK_TCHAP_URL", environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,

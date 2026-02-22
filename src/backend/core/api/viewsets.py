@@ -236,6 +236,11 @@ class ConfigView(drf.views.APIView):
 
         dict_settings["prompt_suggestions"] = settings.PROMPT_SUGGESTIONS
 
+        dict_settings["feedback_urls"] = {
+            "form_url": settings.FEEDBACK_FORM_URL or None,
+            "tchap_url": settings.FEEDBACK_TCHAP_URL or None,
+        }
+
         dict_settings["theme_customization"] = self._load_theme_customization()
 
         dict_settings["chat_upload_accept"] = ",".join(settings.RAG_FILES_ACCEPTED_FORMATS)

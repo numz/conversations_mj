@@ -38,6 +38,11 @@ export interface PromptSuggestion {
   prompt: string;
 }
 
+export interface FeedbackUrls {
+  form_url?: string | null;
+  tchap_url?: string | null;
+}
+
 export interface ConfigResponse {
   ACTIVATION_REQUIRED: boolean;
   CRISP_WEBSITE_ID?: string;
@@ -57,6 +62,7 @@ export interface ConfigResponse {
   feature_flags_custom?: FeatureFlagsCustom;
   tool_display_names?: ToolDisplayNames;
   prompt_suggestions?: PromptSuggestion[];
+  feedback_urls?: FeedbackUrls;
 }
 
 const LOCAL_STORAGE_KEY = 'conversations_config';

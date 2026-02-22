@@ -105,6 +105,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | ENABLE_TABLE_EXPORT                             | Add a CSV export button on markdown tables in chat messages. See [Feature Flags](feature-flags.md)                                | true                                                    |
 | PROMPT_SUGGESTIONS_ENABLED                      | Show clickable prompt suggestion cards on empty chat screen. See [Feature Flags](feature-flags.md)                                | true                                                    |
 | PROMPT_SUGGESTIONS                              | JSON array of prompt suggestions. Format: `[{"icon":"gavel","title":"...","prompt":"..."}]`                                       | (built-in defaults)                                     |
+| FEEDBACK_FORM_URL                               | URL for the feedback form. Overrides the default URL in the feedback component                                                    |                                                         |
+| FEEDBACK_TCHAP_URL                              | URL for the Tchap feedback channel. Overrides the default URL in the feedback component                                           |                                                         |
 
 
 ## conversations-frontend image
