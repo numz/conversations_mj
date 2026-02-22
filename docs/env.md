@@ -98,6 +98,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| TOOL_NAME_SANITIZE_ENABLED                      | Enable sanitization of hallucinated tool names (removes `<\|channel\|>`, `<\|start\|>` tokens)                                    | false                                                   |
 
 
 ## conversations-frontend image
