@@ -21,8 +21,7 @@ export const Feedback = (_props: { buttonProps?: Partial<ButtonProps> }) => {
   const modal = useModal();
   const { data: config } = useConfig();
 
-  const feedbackFormUrl =
-    config?.feedback_urls?.form_url || DEFAULT_FORM_URL;
+  const feedbackFormUrl = config?.feedback_urls?.form_url || DEFAULT_FORM_URL;
   const feedbackTchapUrl =
     config?.feedback_urls?.tchap_url || DEFAULT_TCHAP_URL;
 
