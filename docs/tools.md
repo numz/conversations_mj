@@ -67,6 +67,9 @@ We want to add dynamic loading in the future.
 | `web_search_brave`                       | Web search using Brave Search API with optional summarization | [Details](tools/web_search_brave.md)                                        |
 | `web_search_brave_with_document_backend` | Web search using Brave with RAG-based document processing     | [Details](tools/web_search_brave.md#web_search_brave_with_document_backend) |
 | `web_search_albert_rag`                  | ⚠️ **Deprecated** - Web search using Albert API with RAG      | [Details](tools/web_search_brave.md#deprecated-web_search_albert_rag)       |
+| `document_list`                          | List all documents available in the conversation              | [Details](tools/document_tools.md#document_list)                            |
+| `document_get_content`                   | Retrieve the full text content of a document                  | [Details](tools/document_tools.md#document_get_content)                     |
+| `document_analyze`                       | Analyze multiple documents (compare, match, compliance...)    | [Details](tools/document_tools.md#document_analyze)                         |
 
 ## Adding a New Tool
 
