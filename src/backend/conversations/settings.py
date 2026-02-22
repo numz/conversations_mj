@@ -1007,6 +1007,11 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+    TOOL_NAME_SANITIZE_ENABLED = values.BooleanValue(
+        False,
+        environ_name="TOOL_NAME_SANITIZE_ENABLED",
+        environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,

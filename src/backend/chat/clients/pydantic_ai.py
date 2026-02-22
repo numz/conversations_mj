@@ -266,6 +266,18 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
     def _stop_cache_key(self):
         return f"streaming:stop:{self.conversation.pk}"
 
+    def _clean_tool_name(self, tool_name: str) -> str:
+        """Sanitize tool name to remove internal model tokens (e.g. vLLM artifacts).
+
+        No-op when TOOL_NAME_SANITIZE_ENABLED is False (default).
+        """
+        if not settings.TOOL_NAME_SANITIZE_ENABLED or not tool_name:
+            return tool_name
+        for invalid in ["<|channel|>", "<|start|>", "<|end|>"]:
+            if invalid in tool_name:
+                tool_name = tool_name.split(invalid)[0]
+        return tool_name.strip()
+
     # --------------------------------------------------------------------- #
     # Public streaming API (unchanged signatures)
     # --------------------------------------------------------------------- #
@@ -766,7 +778,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             elif isinstance(part, ToolCallPart):
                 yield events_v4.ToolCallPart(
                     tool_call_id=part.tool_call_id,
-                    tool_name=part.tool_name,
+                    tool_name=self._clean_tool_name(part.tool_name),
                     args=json.loads(part.args) if part.args else {},
                 )
             elif isinstance(part, ThinkingPart):
@@ -782,6 +794,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                     if isinstance(event.part, TextPart):
                         yield events_v4.TextPart(text=event.part.content)
                     elif isinstance(event.part, ToolCallPart):
+                        event.part.tool_name = self._clean_tool_name(event.part.tool_name)
                         yield events_v4.ToolCallStreamingStartPart(
                             tool_call_id=event.part.tool_call_id,
                             tool_name=event.part.tool_name,
@@ -825,6 +838,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 )
                 if isinstance(event, FunctionToolCallEvent):
                     if not state.tool_is_streaming:
+                        event.part.tool_name = self._clean_tool_name(event.part.tool_name)
                         yield events_v4.ToolCallPart(
                             tool_call_id=event.tool_call_id,
                             tool_name=event.part.tool_name,
