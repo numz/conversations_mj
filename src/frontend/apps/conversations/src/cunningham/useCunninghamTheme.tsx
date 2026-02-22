@@ -51,7 +51,6 @@ const getComponentTokens = (
 };
 
 const DEFAULT_THEME: Theme = 'default';
-const defaultTokens = getMergedTokens(DEFAULT_THEME);
 
 // Helper to get isDarkMode from useChatPreferencesStore
 const getIsDarkModeFromPreferences = (): boolean => {
@@ -62,30 +61,58 @@ const getIsDarkModeFromPreferences = (): boolean => {
   }
 };
 
-// Read isDarkMode directly from localStorage (sync, no hydration dependency)
-const getPersistedIsDarkMode = (): boolean | null => {
+// Read persisted theme state directly from localStorage (sync, no hydration dependency)
+const getPersistedThemeState = (): {
+  isDarkMode: boolean;
+  baseTheme: Theme;
+} | null => {
   try {
     const raw = localStorage.getItem('cunningham-theme');
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { state?: { isDarkMode?: boolean } };
-    return parsed?.state?.isDarkMode ?? null;
+    const parsed = JSON.parse(raw) as {
+      state?: { isDarkMode?: boolean; baseTheme?: Theme };
+    };
+    if (parsed?.state?.isDarkMode !== undefined) {
+      return {
+        isDarkMode: parsed.state.isDarkMode,
+        baseTheme: parsed.state.baseTheme || DEFAULT_THEME,
+      };
+    }
+    return null;
   } catch {
     return null;
   }
 };
 
+// Derive full theme name from isDarkMode + baseTheme
+const deriveTheme = (isDarkMode: boolean, baseTheme: Theme): Theme => {
+  return isDarkMode
+    ? baseTheme === 'dsfr'
+      ? 'dsfr-dark'
+      : 'dark'
+    : baseTheme;
+};
+
+// Compute initial state from persisted values so the first render is correct
+const persistedState = getPersistedThemeState();
+const initialIsDarkMode =
+  persistedState?.isDarkMode ?? getIsDarkModeFromPreferences();
+const initialBaseTheme = persistedState?.baseTheme ?? DEFAULT_THEME;
+const initialTheme = deriveTheme(initialIsDarkMode, initialBaseTheme);
+const defaultTokens = getMergedTokens(initialTheme);
+
 const initialState: ThemeStore = {
   colorsTokens: defaultTokens.globals.colors,
   componentTokens: getComponentTokens(defaultTokens),
   contextualTokens: defaultTokens.contextuals,
-  currentTokens: tokens.themes[DEFAULT_THEME] as Partial<Tokens>,
+  currentTokens: tokens.themes[initialTheme] as Partial<Tokens>,
   fontSizesTokens: defaultTokens.globals.font.sizes,
   setTheme: () => {},
   spacingsTokens: defaultTokens.globals.spacings,
-  theme: DEFAULT_THEME,
-  baseTheme: DEFAULT_THEME,
+  theme: initialTheme,
+  baseTheme: initialBaseTheme,
   themeTokens: defaultTokens.globals,
-  isDarkMode: getPersistedIsDarkMode() ?? getIsDarkModeFromPreferences(),
+  isDarkMode: initialIsDarkMode,
   toggleDarkMode: () => {},
 };
 
@@ -105,7 +132,7 @@ export const useCunninghamTheme = create<ThemeStore>()(
         // Read isDarkMode directly from localStorage to avoid race condition
         // with async Zustand hydration. Fall back to preferences store, then theme hint.
         const isDarkMode =
-          getPersistedIsDarkMode() ??
+          getPersistedThemeState()?.isDarkMode ??
           getIsDarkModeFromPreferences() ??
           (theme === 'dark' || theme === 'dsfr-dark');
 
@@ -167,14 +194,23 @@ export const useCunninghamTheme = create<ThemeStore>()(
         baseTheme: state.baseTheme,
       }),
       onRehydrateStorage: () => (state, error) => {
-        if (error) {
-          console.error('[useCunninghamTheme] Rehydration error:', error);
-          return;
+        if (error || !state) return;
+        // Hydration restored isDarkMode and baseTheme but not theme/tokens.
+        // Recalculate them to ensure the UI matches the persisted preference.
+        const finalTheme = deriveTheme(state.isDarkMode, state.baseTheme);
+        if (finalTheme !== state.theme) {
+          const newTokens = getMergedTokens(finalTheme);
+          useCunninghamTheme.setState({
+            colorsTokens: newTokens.globals.colors,
+            componentTokens: getComponentTokens(newTokens),
+            contextualTokens: newTokens.contextuals,
+            currentTokens: tokens.themes[finalTheme] as Partial<Tokens>,
+            fontSizesTokens: newTokens.globals.font.sizes,
+            spacingsTokens: newTokens.globals.spacings,
+            theme: finalTheme,
+            themeTokens: newTokens.globals,
+          });
         }
-        // Don't overwrite the hydrated isDarkMode — it was persisted
-        // correctly. The old code called getIsDarkModeFromPreferences()
-        // here, but useChatPreferencesStore may not be hydrated yet,
-        // causing isDarkMode to be reset to false on every refresh.
       },
     },
   ),
