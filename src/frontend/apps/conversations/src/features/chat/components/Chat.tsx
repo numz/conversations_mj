@@ -21,6 +21,7 @@ import { ChatError } from '@/features/chat/components/ChatError';
 import { InputChat } from '@/features/chat/components/InputChat';
 import { MessageItem } from '@/features/chat/components/MessageItem';
 import { ReasoningBox } from '@/features/chat/components/ReasoningBox';
+import { PromptSuggestions } from '@/features/chat/components/PromptSuggestions';
 import { useClipboard } from '@/hook';
 import { useResponsiveStore } from '@/stores';
 
@@ -148,6 +149,9 @@ export const Chat = ({
     forceWebSearch?: boolean;
   } | null>(null);
   const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
+  const [suggestionToSubmit, setSuggestionToSubmit] = useState<string | null>(
+    null,
+  );
   const [shouldRetry, setShouldRetry] = useState(false);
   const retryOriginalInputRef = useRef<string>('');
   const retryOriginalFilesRef = useRef<FileList | null>(null);
@@ -246,6 +250,14 @@ export const Chat = ({
 
   const handleSubmitWrapper = (event: FormEvent<HTMLFormElement>) => {
     void handleSubmit(event);
+  };
+
+  const handleSuggestionSelect = (prompt: string) => {
+    // Set the input value and mark for auto-submit
+    handleInputChange({
+      target: { value: prompt },
+    } as ChangeEvent<HTMLTextAreaElement>);
+    setSuggestionToSubmit(prompt);
   };
 
   const handleRetry = () => {
@@ -436,6 +448,20 @@ export const Chat = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoSubmit, input, files]);
+
+  // When a suggestion is selected and input matches, submit
+  useEffect(() => {
+    if (suggestionToSubmit && input === suggestionToSubmit) {
+      const form = document.createElement('form');
+      const syntheticFormEvent = {
+        preventDefault: () => {},
+        target: form,
+      } as unknown as FormEvent<HTMLFormElement>;
+      void handleSubmit(syntheticFormEvent);
+      setSuggestionToSubmit(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestionToSubmit, input]);
 
   useEffect(() => {
     if (
@@ -742,6 +768,9 @@ export const Chat = ({
           onModelSelect={handleModelSelect}
           isUploadingFiles={isUploadingFiles}
         />
+        {messages.length === 0 && featureFlags.prompt_suggestions_enabled && (
+          <PromptSuggestions onSelect={handleSuggestionSelect} />
+        )}
       </Box>
       <Modal
         isOpen={!!chatErrorModal}

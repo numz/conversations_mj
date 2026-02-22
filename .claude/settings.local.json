@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/NUMZ/DEVMJ/conversations-fork && docker compose up -d 2>&1)",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__wait_for",
+      "mcp__chrome-devtools__new_page",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__select_page",
+      "mcp__chrome-devtools__fill_form",
+      "Bash(cd /c/NUMZ/DEVMJ/conversations-fork && docker compose exec app-dev python -c \"from chat.tools import get_available_tools; print\\([t for t in get_available_tools\\(\\)]\\)\" 2>&1)",
+      "Bash(sleep 5 && cd /c/NUMZ/DEVMJ/conversations-fork && docker compose exec app-dev printenv AI_AGENT_TOOLS 2>&1)",
+      "Bash(sleep 6 && cd /c/NUMZ/DEVMJ/conversations-fork && docker compose exec app-dev python -c \"\nimport urllib.request\nreq = urllib.request.Request\\('http://localhost:8000/api/v1.0/config/'\\)\nr = urllib.request.urlopen\\(req, timeout=10\\)\nimport json\ndata = json.loads\\(r.read\\(\\).decode\\(\\)\\)\nprint\\(json.dumps\\({k: v for k, v in data.items\\(\\) if 'flag' in k.lower\\(\\) or 'feature' in k.lower\\(\\)}, indent=2\\)\\)\n\" 2>&1)",
+      "mcp__chrome-devtools__navigate_page",
+      "Bash(cd /c/NUMZ/DEVMJ/conversations-fork && git checkout feat/reasoning-box 2>&1)",
+      "Bash(cd /c/NUMZ/DEVMJ/conversations-fork && docker compose down app-dev && docker compose up -d app-dev 2>&1)",
+      "Bash(sleep 6 && cd /c/NUMZ/DEVMJ/conversations-fork && docker compose exec app-dev python -c \"\nimport urllib.request, json\nr = urllib.request.urlopen\\('http://localhost:8000/api/v1.0/config/', timeout=10\\)\ndata = json.loads\\(r.read\\(\\).decode\\(\\)\\)\nprint\\(json.dumps\\(data.get\\('feature_flags_custom', {}\\), indent=2\\)\\)\n\" 2>&1)",
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__list_network_requests",
+      "mcp__chrome-devtools__evaluate_script"
+    ]
+  }
+}

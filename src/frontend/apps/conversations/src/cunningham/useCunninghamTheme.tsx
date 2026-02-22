@@ -50,7 +50,7 @@ const getComponentTokens = (
   );
 };
 
-const DEFAULT_THEME: Theme = 'default';
+const DEFAULT_THEME: Theme = 'dsfr';
 const defaultTokens = getMergedTokens(DEFAULT_THEME);
 
 // Helper to get isDarkMode from useChatPreferencesStore

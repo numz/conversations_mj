@@ -31,6 +31,13 @@ export interface ToolDisplayNames {
   [toolName: string]: string;
 }
 
+// Configurable prompt suggestion
+export interface PromptSuggestion {
+  icon: string;
+  title: string;
+  prompt: string;
+}
+
 export interface ConfigResponse {
   ACTIVATION_REQUIRED: boolean;
   CRISP_WEBSITE_ID?: string;
@@ -49,6 +56,7 @@ export interface ConfigResponse {
   chat_upload_accept?: string;
   feature_flags_custom?: FeatureFlagsCustom;
   tool_display_names?: ToolDisplayNames;
+  prompt_suggestions?: PromptSuggestion[];
 }
 
 const LOCAL_STORAGE_KEY = 'conversations_config';

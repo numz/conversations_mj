@@ -1055,6 +1055,66 @@ USER QUESTION:
         environ_prefix=None,
     )
 
+    # Feature flag: prompt suggestions on empty chat page
+    PROMPT_SUGGESTIONS_ENABLED = values.BooleanValue(
+        default=True,
+        environ_name="PROMPT_SUGGESTIONS_ENABLED",
+        environ_prefix=None,
+    )
+
+    # Configurable prompt suggestions displayed on empty chat page
+    # Each suggestion has: icon (Material icon name), title (short label), prompt (full text)
+    # Note: Use JSON format in env var, e.g. PROMPT_SUGGESTIONS='[{"icon":"gavel","title":"...","prompt":"..."}]'
+    _PROMPT_SUGGESTIONS_DEFAULT = [
+        {
+            "icon": "gavel",
+            "title": "Article de loi",
+            "prompt": "Que dit l'article 1240 du Code civil ?",
+        },
+        {
+            "icon": "description",
+            "title": "Résumer un document",
+            "prompt": "Résume les points principaux d'un document juridique",
+        },
+        {
+            "icon": "balance",
+            "title": "Jurisprudence",
+            "prompt": "Trouve une jurisprudence récente sur le licenciement abusif",
+        },
+        {
+            "icon": "edit_note",
+            "title": "Rédiger un document",
+            "prompt": "Aide-moi à rédiger une lettre de mise en demeure",
+        },
+        {
+            "icon": "help_outline",
+            "title": "Procédure juridique",
+            "prompt": "Quelles sont les étapes d'une procédure d'appel ?",
+        },
+        {
+            "icon": "search",
+            "title": "Recherche juridique",
+            "prompt": "Quelles sont les conditions de la légitime défense ?",
+        },
+    ]
+    _PROMPT_SUGGESTIONS_RAW = values.Value(
+        default="",
+        environ_name="PROMPT_SUGGESTIONS",
+        environ_prefix=None,
+    )
+
+    @property
+    def PROMPT_SUGGESTIONS(self):
+        """Parse PROMPT_SUGGESTIONS as JSON list."""
+        raw = self._PROMPT_SUGGESTIONS_RAW
+        if raw and isinstance(raw, str):
+            try:
+                import json
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                return self._PROMPT_SUGGESTIONS_DEFAULT
+        return self._PROMPT_SUGGESTIONS_DEFAULT
+
     # pylint: disable=invalid-name
     @property
     def ENVIRONMENT(self):

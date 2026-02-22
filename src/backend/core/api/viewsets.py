@@ -228,10 +228,13 @@ class ConfigView(drf.views.APIView):
             "conversation_grouping_enabled": settings.CONVERSATION_GROUPING_ENABLED,
             "inline_rename_enabled": settings.INLINE_RENAME_ENABLED,
             "enable_table_export": settings.ENABLE_TABLE_EXPORT,
+            "prompt_suggestions_enabled": settings.PROMPT_SUGGESTIONS_ENABLED,
         }
 
         # Tool display names for human-readable tool labels
         dict_settings["tool_display_names"] = dict(settings.TOOL_DISPLAY_NAMES)
+
+        dict_settings["prompt_suggestions"] = settings.PROMPT_SUGGESTIONS
 
         dict_settings["theme_customization"] = self._load_theme_customization()
 
