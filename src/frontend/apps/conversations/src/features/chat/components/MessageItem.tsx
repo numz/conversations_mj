@@ -388,6 +388,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
             {isCurrentlyStreaming &&
               isLastAssistantMessage &&
               status === 'streaming' &&
+              !reasoningContent &&
               hasNonDocumentParsingTool && (
                 <Box
                   $direction="row"
