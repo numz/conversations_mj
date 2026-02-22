@@ -497,10 +497,13 @@ export const Chat = ({
             setHasInitialized(true);
           }
         } catch {
-          // Optionally handle error (e.g., setInitialConversationMessages([]) or show error)
           if (!ignore) {
-            setInitialConversationMessages([]);
-            setHasInitialized(true);
+            if (featureFlags.conversation_error_redirect_enabled) {
+              void router.replace('/chat');
+            } else {
+              setInitialConversationMessages([]);
+              setHasInitialized(true);
+            }
           }
         }
       }
@@ -510,7 +513,13 @@ export const Chat = ({
       ignore = true;
     };
     // Only run when initialConversationId or pendingInput changes
-  }, [initialConversationId, pendingInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    initialConversationId,
+    pendingInput,
+    router,
+    featureFlags.conversation_error_redirect_enabled,
+  ]);
 
   useEffect(() => {
     if (
