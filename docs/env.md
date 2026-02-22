@@ -98,6 +98,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| DOCUMENT_TOOLS_ENABLED                          | Enable document tools (`document_list`, `document_get_content`, `document_analyze`). See [Tools](tools.md)                        | true                                                    |
+| DOCUMENT_CONTENT_MAX_SIZE                       | Maximum document size in bytes for full-text retrieval via document tools. Larger documents should use RAG search                  | 200000                                                  |
 
 
 ## conversations-frontend image

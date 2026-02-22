@@ -1007,6 +1007,17 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+    # Feature: Document Tools (list, get content, analyze)
+    DOCUMENT_TOOLS_ENABLED = values.BooleanValue(
+        default=True, environ_name="DOCUMENT_TOOLS_ENABLED", environ_prefix=None,
+    )
+    # Max cumulative size (bytes) for document content retrieval tools.
+    # Documents exceeding this threshold should use RAG search instead.
+    # Default: 200KB (~50k tokens)
+    DOCUMENT_CONTENT_MAX_SIZE = values.PositiveIntegerValue(
+        default=200_000, environ_name="DOCUMENT_CONTENT_MAX_SIZE", environ_prefix=None,
+    )
+
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,
