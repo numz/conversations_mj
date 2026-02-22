@@ -1,4 +1,9 @@
-import { Message, SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
+import {
+  Message,
+  ReasoningUIPart,
+  SourceUIPart,
+  ToolInvocationUIPart,
+} from '@ai-sdk/ui-utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +14,7 @@ import {
   CompletedMarkdownBlock,
   RawTextBlock,
 } from '@/features/chat/components/MessageBlock';
+import { ReasoningBox } from '@/features/chat/components/ReasoningBox';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
 
@@ -227,6 +233,34 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     return tool?.toolInvocation;
   }, [toolInvocationParts]);
 
+  // Reasoning box content
+  const reasoningContent = React.useMemo(() => {
+    const reasoningParts = message.parts?.filter(
+      (part): part is ReasoningUIPart => part.type === 'reasoning',
+    );
+    const combinedReasoning = reasoningParts
+      ?.map((part) => part.reasoning)
+      .join('\n');
+
+    let processingLabel: string | null = null;
+    if (isCurrentlyStreaming && isLastAssistantMessage) {
+      processingLabel = t('Thinking...');
+    }
+
+    if (!combinedReasoning && !processingLabel) {
+      return null;
+    }
+
+    return (
+      <ReasoningBox
+        key={`reasoning-${message.id}`}
+        reasoning={combinedReasoning || ''}
+        isStreaming={isCurrentlyStreaming && isLastAssistantMessage}
+        processingLabel={processingLabel}
+      />
+    );
+  }, [message.parts, message.id, isCurrentlyStreaming, isLastAssistantMessage, t]);
+
   // Memoize the streaming content split to avoid recreating components in JSX
   const { completedBlocks, pending } = React.useMemo(() => {
     // When not streaming, everything is completed as a single block array
@@ -343,6 +377,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           )}
 
           <Box $direction="column" $gap="2">
+            {/* Reasoning Box */}
+            {reasoningContent}
             {isCurrentlyStreaming &&
               isLastAssistantMessage &&
               status === 'streaming' &&
