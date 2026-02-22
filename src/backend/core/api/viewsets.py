@@ -223,7 +223,9 @@ class ConfigView(drf.views.APIView):
 
         # Feature flags for optional custom features
         # Individual flags are added by their respective features
-        dict_settings["feature_flags_custom"] = {}
+        dict_settings["feature_flags_custom"] = {
+            "conversation_error_redirect_enabled": settings.CONVERSATION_ERROR_REDIRECT_ENABLED,
+        }
 
         dict_settings["theme_customization"] = self._load_theme_customization()
 

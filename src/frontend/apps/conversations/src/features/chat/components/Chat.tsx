@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -42,6 +43,7 @@ export const Chat = ({
   const { t } = useTranslation();
   const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
+  const featureFlags = useFeatureFlags();
 
   const streamProtocol = 'data'; // or 'text'
 
@@ -465,10 +467,13 @@ export const Chat = ({
             setHasInitialized(true);
           }
         } catch {
-          // Optionally handle error (e.g., setInitialConversationMessages([]) or show error)
           if (!ignore) {
-            setInitialConversationMessages([]);
-            setHasInitialized(true);
+            if (featureFlags.conversation_error_redirect_enabled) {
+              void router.replace('/chat');
+            } else {
+              setInitialConversationMessages([]);
+              setHasInitialized(true);
+            }
           }
         }
       }
@@ -478,7 +483,13 @@ export const Chat = ({
       ignore = true;
     };
     // Only run when initialConversationId or pendingInput changes
-  }, [initialConversationId, pendingInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    initialConversationId,
+    pendingInput,
+    router,
+    featureFlags.conversation_error_redirect_enabled,
+  ]);
 
   useEffect(() => {
     if (
