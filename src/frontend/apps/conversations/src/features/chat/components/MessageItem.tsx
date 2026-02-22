@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Icon, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config';
 import { AttachmentList } from '@/features/chat/components/AttachmentList';
 import { FeedbackButtons } from '@/features/chat/components/FeedbackButtons';
 import {
@@ -14,12 +15,24 @@ import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationIte
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
-  ({ blocks, pending }: { blocks: string[]; pending: string }) => (
+  ({
+    blocks,
+    pending,
+    sanitize,
+  }: {
+    blocks: string[];
+    pending: string;
+    sanitize?: boolean;
+  }) => (
     <div>
       {/* key={index} is safe here: blocks are append-only during streaming
          and a completed block's content never changes once finalized. */}
       {blocks.map((block, index) => (
-        <CompletedMarkdownBlock key={index} content={block} />
+        <CompletedMarkdownBlock
+          key={index}
+          content={block}
+          sanitize={sanitize}
+        />
       ))}
       {pending && <RawTextBlock content={pending} />}
     </div>
@@ -27,6 +40,7 @@ const BlocksList = React.memo(
   (prev, next) => {
     const lengthChanged = prev.blocks.length !== next.blocks.length;
     const pendingChanged = prev.pending !== next.pending;
+    const sanitizeChanged = prev.sanitize !== next.sanitize;
 
     let blocksChanged = false;
     for (let i = 0; i < Math.min(prev.blocks.length, next.blocks.length); i++) {
@@ -35,7 +49,7 @@ const BlocksList = React.memo(
       }
     }
 
-    if (lengthChanged || pendingChanged || blocksChanged) {
+    if (lengthChanged || pendingChanged || blocksChanged || sanitizeChanged) {
       return false; // needs re-render
     }
     return true;
@@ -185,6 +199,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   getMetadata,
 }) => {
   const { t } = useTranslation();
+  const featureFlags = useFeatureFlags();
 
   const shouldApplyStreamingHeight =
     isLastAssistantMessage &&
@@ -337,7 +352,11 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 </Text>
               ) : (
                 // Render completed blocks as markdown, pending block as plain text
-                <BlocksList blocks={completedBlocks} pending={pending} />
+                <BlocksList
+                  blocks={completedBlocks}
+                  pending={pending}
+                  sanitize={featureFlags.markdown_sanitize_enabled}
+                />
               )}
             </Box>
           )}

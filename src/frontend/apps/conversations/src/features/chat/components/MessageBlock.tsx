@@ -3,6 +3,8 @@ import rehypeShikiFromHighlighter from '@shikijs/rehype/core';
 import React, { use } from 'react';
 import { Components, MarkdownHooks } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
@@ -12,14 +14,33 @@ import { CodeBlock } from '@/features/chat/components/CodeBlock';
 // Memoized markdown plugins - created once at module level
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const REMARK_PLUGINS: any[] = [remarkGfm, remarkMath];
-// // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 import { getHighlighter } from '../utils/shiki';
 
 const highlighterPromise = getHighlighter();
 
+// Sanitized: rehypeRaw parses HTML in markdown, rehypeSanitize strips dangerous HTML,
+// then KaTeX and Shiki run after sanitization so their output is preserved.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rehypePluginsPromise: Promise<any[]> = highlighterPromise.then(
+const rehypePluginsSanitizedPromise: Promise<any[]> = highlighterPromise.then(
+  (highlighter) => [
+    rehypeRaw,
+    rehypeSanitize,
+    rehypeKatex,
+    [
+      rehypeShikiFromHighlighter,
+      highlighter,
+      {
+        theme: 'github-dark-dimmed',
+        fallbackLanguage: 'plaintext',
+      },
+    ],
+  ],
+);
+
+// Default (no sanitization): only KaTeX and Shiki
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const rehypePluginsDefaultPromise: Promise<any[]> = highlighterPromise.then(
   (highlighter) => [
     rehypeKatex,
     [
@@ -60,8 +81,10 @@ const MARKDOWN_COMPONENTS: Components = {
 };
 
 export const CompletedMarkdownBlock = React.memo(
-  ({ content }: { content: string }) => {
-    const rehypePlugins = use(rehypePluginsPromise);
+  ({ content, sanitize }: { content: string; sanitize?: boolean }) => {
+    const rehypePlugins = use(
+      sanitize ? rehypePluginsSanitizedPromise : rehypePluginsDefaultPromise,
+    );
     return (
       <MarkdownHooks
         remarkPlugins={REMARK_PLUGINS}
@@ -72,7 +95,8 @@ export const CompletedMarkdownBlock = React.memo(
       </MarkdownHooks>
     );
   },
-  (prev, next) => prev.content === next.content,
+  (prev, next) =>
+    prev.content === next.content && prev.sanitize === next.sanitize,
 );
 
 CompletedMarkdownBlock.displayName = 'CompletedMarkdownBlock';
