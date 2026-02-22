@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -21,7 +22,6 @@ import { InputChat } from '@/features/chat/components/InputChat';
 import { MessageItem } from '@/features/chat/components/MessageItem';
 import { PromptSuggestions } from '@/features/chat/components/PromptSuggestions';
 import { useClipboard } from '@/hook';
-import { useFeatureFlags } from '@/core/config';
 import { useResponsiveStore } from '@/stores';
 
 import { useSourceMetadataCache } from '../hooks';
