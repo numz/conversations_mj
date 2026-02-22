@@ -11,10 +11,12 @@ import { ModalRenameConversation } from './ModalRenameConversation';
 
 interface ConversationItemActionsProps {
   conversation: ChatConversation;
+  onRename?: () => void;
 }
 
 export const ConversationItemActions = ({
   conversation,
+  onRename,
 }: ConversationItemActionsProps) => {
   const { t } = useTranslation();
 
@@ -25,7 +27,7 @@ export const ConversationItemActions = ({
     {
       label: t('Rename chat'),
       icon: 'edit',
-      callback: renameModal.open,
+      callback: onRename ?? renameModal.open,
       disabled: false,
       testId: `conversation-item-actions-rename-${conversation.id}`,
     },
@@ -84,7 +86,7 @@ export const ConversationItemActions = ({
           conversation={conversation}
         />
       )}
-      {renameModal.isOpen && (
+      {!onRename && renameModal.isOpen && (
         <ModalRenameConversation
           onClose={renameModal.close}
           conversation={conversation}

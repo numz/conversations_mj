@@ -225,6 +225,8 @@ class ConfigView(drf.views.APIView):
         # Individual flags are added by their respective features
         dict_settings["feature_flags_custom"] = {
             "reasoning_box_enabled": settings.REASONING_BOX_ENABLED,
+            "conversation_grouping_enabled": settings.CONVERSATION_GROUPING_ENABLED,
+            "inline_rename_enabled": settings.INLINE_RENAME_ENABLED,
         }
 
         # Tool display names for human-readable tool labels
