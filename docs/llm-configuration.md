@@ -162,6 +162,7 @@ Models define the LLMs available in your application.
 | `icon`                | string/array | No       | Base64-encoded icon or array of icon parts                                                          |
 | `system_prompt`       | string       | Yes      | Default system prompt for the model (can use `settings.` or `environ.` prefix)                      |
 | `tools`               | array        | Yes      | List of enabled tools for this model (can use `settings.` or `environ.` prefix for the whole array) |
+| `tool_instructions`   | object       | No       | Per-tool system prompt instructions keyed by tool name pattern. See [Tool Instructions](#tool-instructions) |
 | `supports_streaming`  | boolean      | No       | Whether the model supports streaming responses                                                      |
 
 \* Either `provider_name` or `provider` must be set, unless `model_name` is in the format `<provider>:<model>`.
@@ -363,6 +364,42 @@ Icons can be provided as base64-encoded PNG images. For long strings, you can sp
   ]
 }
 ```
+
+### Tool Instructions
+
+The `tool_instructions` field allows you to add extra system prompts that are conditionally included
+based on which tools are configured for the model. This is useful for providing model-specific guidance
+on how to use certain tools.
+
+Instructions are defined as a dictionary where keys are tool name patterns and values are the instruction text.
+
+**Pattern types:**
+
+| Pattern        | Description                                                              | Example                    |
+|----------------|--------------------------------------------------------------------------|----------------------------|
+| `_default`     | Always included when the model has any tools configured                  | General tool usage guidance |
+| `exact_name`   | Included only when a tool with this exact name is in the `tools` list    | `"web_search_brave"`       |
+| `wildcard_*`   | Wildcard matching using `fnmatch` — matches any tool starting with prefix | `"legifrance_*"`           |
+
+**Example configuration:**
+
+```json
+{
+  "hrid": "my-model",
+  "model_name": "gpt-4",
+  "tools": ["web_search_brave", "legifrance_search", "legifrance_article"],
+  "tool_instructions": {
+    "_default": "When using tools, always explain to the user what you are searching for before calling the tool.",
+    "web_search_brave": "For web searches, prefer French-language results when the user writes in French.",
+    "legifrance_*": "When using Legifrance tools, always cite the article number and the law name in your response."
+  }
+}
+```
+
+In this example:
+- The `_default` instruction is added because the model has tools configured
+- The `web_search_brave` instruction is added because this exact tool is in the list
+- The `legifrance_*` instruction is added because `legifrance_search` and `legifrance_article` match the wildcard
 
 ## Validation
 
