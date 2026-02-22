@@ -98,6 +98,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| FEEDBACK_FORM_URL                               | URL for the feedback form. Overrides the default URL in the feedback component                                                    |                                                         |
+| FEEDBACK_TCHAP_URL                              | URL for the Tchap feedback channel. Overrides the default URL in the feedback component                                           |                                                         |
 
 
 ## conversations-frontend image
