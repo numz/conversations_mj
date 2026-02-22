@@ -98,6 +98,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| PROMPT_SUGGESTIONS_ENABLED                      | Show clickable prompt suggestion cards on empty chat screen. See [Feature Flags](feature-flags.md)                                | true                                                    |
+| PROMPT_SUGGESTIONS                              | JSON array of prompt suggestions. Format: `[{"icon":"gavel","title":"...","prompt":"..."}]`                                       | (built-in defaults)                                     |
 
 
 ## conversations-frontend image
