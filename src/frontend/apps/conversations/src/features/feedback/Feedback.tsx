@@ -9,10 +9,22 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Text } from '@/components';
+import { useConfig } from '@/core/config/api';
+
+const DEFAULT_FORM_URL =
+  'https://formulaire.beta.numerique.gouv.fr/r/assistant';
+const DEFAULT_TCHAP_URL =
+  'https://tchap.gouv.fr/#/room/!eAHyPLdVHMxNhKAbaC:agent.dinum.tchap.gouv.fr?via=agent.dinum.tchap.gouv.fr&via=agent.culture.tchap.gouv.fr&via=agent.education.tchap.gouv.fr';
 
 export const Feedback = (_props: { buttonProps?: Partial<ButtonProps> }) => {
   const { t } = useTranslation();
   const modal = useModal();
+  const { data: config } = useConfig();
+
+  const feedbackFormUrl =
+    config?.feedback_urls?.form_url || DEFAULT_FORM_URL;
+  const feedbackTchapUrl =
+    config?.feedback_urls?.tchap_url || DEFAULT_TCHAP_URL;
 
   return (
     <>
@@ -46,7 +58,7 @@ export const Feedback = (_props: { buttonProps?: Partial<ButtonProps> }) => {
             style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
             <FeedbackButton
-              href="https://formulaire.beta.numerique.gouv.fr/r/assistant"
+              href={feedbackFormUrl}
               icon={<FormIcon />}
               title={t('Give a quick opinion')}
               description={t(
@@ -55,7 +67,7 @@ export const Feedback = (_props: { buttonProps?: Partial<ButtonProps> }) => {
             />
 
             <FeedbackButton
-              href="https://tchap.gouv.fr/#/room/!eAHyPLdVHMxNhKAbaC:agent.dinum.tchap.gouv.fr?via=agent.dinum.tchap.gouv.fr&via=agent.culture.tchap.gouv.fr&via=agent.education.tchap.gouv.fr"
+              href={feedbackTchapUrl}
               icon={<TchapIcon />}
               title={t('Write on Tchap')}
               description={t('Direct exchange with our team')}

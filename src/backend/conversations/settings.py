@@ -1007,6 +1007,13 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+    # Feedback URLs - configurable links for user feedback
+    FEEDBACK_FORM_URL = values.Value(
+        default="", environ_name="FEEDBACK_FORM_URL", environ_prefix=None,
+    )
+    FEEDBACK_TCHAP_URL = values.Value(
+        default="", environ_name="FEEDBACK_TCHAP_URL", environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,
