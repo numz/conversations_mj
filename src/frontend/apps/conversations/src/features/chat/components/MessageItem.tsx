@@ -481,7 +481,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 $gap="6px"
                 $margin={{ top: 'base' }}
               >
-                <Box $direction="row" $gap="4px">
+                <Box $direction="row" $gap="4px" $align="center" $css="flex-wrap: nowrap;">
                   <Box
                     $direction="row"
                     $align="center"
@@ -534,6 +534,9 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                       </Text>
                     </Box>
                   )}
+                  {displayUsage && (
+                    <UsageMetrics usage={displayUsage} />
+                  )}
                 </Box>
                 <Box $direction="row" $gap="4px">
                   {conversationId &&
@@ -545,14 +548,6 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                       />
                     )}
                 </Box>
-              </Box>
-            )}
-
-          {message.role === 'assistant' &&
-            !(isLastAssistantMessage && status === 'streaming') &&
-            displayUsage && (
-              <Box $margin={{ top: 'xs' }}>
-                <UsageMetrics usage={displayUsage} />
               </Box>
             )}
 
