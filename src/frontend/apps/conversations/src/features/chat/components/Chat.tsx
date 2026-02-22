@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -40,8 +41,15 @@ export const Chat = ({
   initialConversationId: string | undefined;
 }) => {
   const { t } = useTranslation();
-  const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
+  const featureFlags = useFeatureFlags();
+  const copyToClipboard = useClipboard(featureFlags.rich_clipboard_enabled);
+  const handleCopy = useCallback(
+    (content: string) => {
+      void copyToClipboard(content);
+    },
+    [copyToClipboard],
+  );
 
   const streamProtocol = 'data'; // or 'text'
 
@@ -648,7 +656,7 @@ export const Chat = ({
                 conversationId={conversationId}
                 isSourceOpen={isSourceOpen}
                 isMobile={isMobile}
-                onCopyToClipboard={copyToClipboard}
+                onCopyToClipboard={handleCopy}
                 onOpenSources={openSources}
                 getMetadata={getMetadata}
               />

@@ -1007,6 +1007,14 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+
+    # Feature flags for optional features
+    RICH_CLIPBOARD_ENABLED = values.BooleanValue(
+        default=True,
+        environ_name="RICH_CLIPBOARD_ENABLED",
+        environ_prefix=None,
+    )
+
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,
