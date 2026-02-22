@@ -139,7 +139,10 @@ from chat.clients.pydantic_ui_message_converter import (
     ui_message_to_user_content,
 )
 from chat.mcp_servers import get_mcp_servers
+from chat.tools.document_analyze import document_analyze
 from chat.tools.document_generic_search_rag import add_document_rag_search_tool_from_setting
+from chat.tools.document_get_content import document_get_content
+from chat.tools.document_list import document_list
 from chat.tools.document_search_rag import add_document_rag_search_tool
 from chat.tools.document_summarize import document_summarize
 from chat.vercel_ai_sdk.core import events_v4, events_v5
@@ -681,6 +684,25 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         async def summarize(ctx: RunContext, *args, **kwargs) -> ToolReturn:
             """Wrap the document_summarize tool to provide context and add the tool."""
             return await document_summarize(ctx, *args, **kwargs)
+
+        if settings.DOCUMENT_TOOLS_ENABLED:
+            @self.conversation_agent.tool(name="list_documents")
+            @functools.wraps(document_list)
+            async def list_docs(ctx: RunContext) -> ToolReturn:
+                """Wrap the document_list tool."""
+                return await document_list(ctx)
+
+            @self.conversation_agent.tool(name="get_document_content", retries=2)
+            @functools.wraps(document_get_content)
+            async def get_content(ctx: RunContext, *args, **kwargs) -> ToolReturn:
+                """Wrap the document_get_content tool."""
+                return await document_get_content(ctx, *args, **kwargs)
+
+            @self.conversation_agent.tool(name="analyze_documents", retries=2)
+            @functools.wraps(document_analyze)
+            async def analyze_docs(ctx: RunContext, *args, **kwargs) -> ToolReturn:
+                """Wrap the document_analyze tool."""
+                return await document_analyze(ctx, *args, **kwargs)
 
     async def _handle_input_documents(
         self,
