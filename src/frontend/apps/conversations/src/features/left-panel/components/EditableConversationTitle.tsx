@@ -9,6 +9,12 @@ import { ChatConversation } from '@/features/chat/types';
 
 import BubbleIcon from '../assets/bubble-bold.svg';
 
+const bubbleContainerStyles = css`
+  background-color: transparent;
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.05));
+  flex-shrink: 0;
+`;
+
 const MAX_TITLE_LENGTH = 100;
 const MIN_TITLE_LENGTH = 1;
 
@@ -22,7 +28,7 @@ export const EditableConversationTitle = ({
   onClose,
 }: EditableConversationTitleProps) => {
   const { t } = useTranslation();
-  const { spacingsTokens, colorsTokens } = useCunninghamTheme();
+  const { spacingsTokens } = useCunninghamTheme();
   const { showToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const isReadyRef = useRef(false);
@@ -138,17 +144,10 @@ export const EditableConversationTitle = ({
       <Box
         $direction="row"
         $align="center"
-        $css={css`
-          background-color: transparent;
-          filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.05));
-          flex-shrink: 0;
-        `}
+        $css={bubbleContainerStyles}
         $padding={`${spacingsTokens['3xs']} 0`}
       >
-        <BubbleIcon
-          aria-label={t('Simple chat icon')}
-          color={colorsTokens['primary-500']}
-        />
+        <BubbleIcon aria-label={t('Simple chat icon')} color="brand" />
       </Box>
       <input
         ref={inputRef}
