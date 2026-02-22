@@ -161,6 +161,7 @@ class LLMConfiguration(BaseModel):
 
     models: list[LLModel]
     providers: list[LLMProvider]
+    tool_display_names: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def fill_providers(self) -> Self:
@@ -196,3 +197,15 @@ def load_llm_configuration(llm_configuration_file_path) -> dict[str, LLModel]:
 def cached_load_llm_configuration(llm_configuration_file_path) -> dict[str, LLModel]:
     """Load the LLM configuration with caching to avoid redundant loading."""
     return load_llm_configuration(llm_configuration_file_path)
+
+
+def load_tool_display_names(llm_configuration_file_path) -> dict[str, str]:
+    """Load the tool display names from the LLM configuration file."""
+    configuration = _read_llm_configuration(llm_configuration_file_path)
+    return configuration.tool_display_names
+
+
+@lru_cache(maxsize=1)
+def cached_load_tool_display_names(llm_configuration_file_path) -> dict[str, str]:
+    """Load the tool display names with caching to avoid redundant loading."""
+    return load_tool_display_names(llm_configuration_file_path)

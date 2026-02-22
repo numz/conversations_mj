@@ -1,4 +1,9 @@
-import { Message, SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
+import {
+  Message,
+  ReasoningUIPart,
+  SourceUIPart,
+  ToolInvocationUIPart,
+} from '@ai-sdk/ui-utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +14,7 @@ import {
   CompletedMarkdownBlock,
   RawTextBlock,
 } from '@/features/chat/components/MessageBlock';
+import { ReasoningBox } from '@/features/chat/components/ReasoningBox';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
 
@@ -165,6 +171,7 @@ export interface MessageItemProps {
   conversationId: string | undefined;
   isSourceOpen: string | null;
   isMobile: boolean;
+  toolDisplayNames: Record<string, string>;
   onCopyToClipboard: (content: string) => void;
   onOpenSources: (messageId: string) => void;
   getMetadata: (url: string) => SourceMetadata | undefined;
@@ -180,6 +187,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   conversationId,
   isSourceOpen,
   isMobile,
+  toolDisplayNames,
   onCopyToClipboard,
   onOpenSources,
   getMetadata,
@@ -226,6 +234,55 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     );
     return tool?.toolInvocation;
   }, [toolInvocationParts]);
+
+  // Reasoning box content
+  const reasoningContent = React.useMemo(() => {
+    const reasoningParts = message.parts?.filter(
+      (part): part is ReasoningUIPart => part.type === 'reasoning',
+    );
+    const combinedReasoning = reasoningParts
+      ?.map((part) => part.reasoning)
+      .join('\n');
+
+    let processingLabel: string | null = null;
+    if (isCurrentlyStreaming && isLastAssistantMessage) {
+      processingLabel = t('Thinking...');
+
+      const toolInvocations = message.parts?.filter(
+        (part) =>
+          part.type === 'tool-invocation' &&
+          part.toolInvocation.toolName !== 'document_parsing',
+      );
+      const lastToolInvocation = toolInvocations?.[toolInvocations.length - 1];
+      if (lastToolInvocation?.type === 'tool-invocation') {
+        const toolName = lastToolInvocation.toolInvocation.toolName;
+        processingLabel =
+          toolDisplayNames[toolName] ||
+          toolDisplayNames['_default'] ||
+          t('Search...');
+      }
+    }
+
+    if (!combinedReasoning && !processingLabel) {
+      return null;
+    }
+
+    return (
+      <ReasoningBox
+        key={`reasoning-${message.id}`}
+        reasoning={combinedReasoning || ''}
+        isStreaming={isCurrentlyStreaming && isLastAssistantMessage}
+        processingLabel={processingLabel}
+      />
+    );
+  }, [
+    message.parts,
+    message.id,
+    isCurrentlyStreaming,
+    isLastAssistantMessage,
+    toolDisplayNames,
+    t,
+  ]);
 
   // Memoize the streaming content split to avoid recreating components in JSX
   const { completedBlocks, pending } = React.useMemo(() => {
@@ -343,6 +400,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           )}
 
           <Box $direction="column" $gap="2">
+            {/* Reasoning Box */}
+            {reasoningContent}
             {isCurrentlyStreaming &&
               isLastAssistantMessage &&
               status === 'streaming' &&
@@ -479,6 +538,15 @@ const arePropsEqual = (
   prevProps: MessageItemProps,
   nextProps: MessageItemProps,
 ): boolean => {
+  // Always re-render during streaming for the last assistant message
+  // so that reasoning content and tool invocations update in real-time
+  if (
+    nextProps.isLastAssistantMessage &&
+    (nextProps.status === 'streaming' || nextProps.status === 'submitted')
+  ) {
+    return false;
+  }
+
   // Always re-render if message content changed
   if (prevProps.message.id !== nextProps.message.id) {
     return false;
@@ -490,10 +558,10 @@ const arePropsEqual = (
     return false;
   }
 
-  // Check parts changes (for streaming tool invocations and sources)
-  const prevPartsLength = prevProps.message.parts?.length ?? 0;
-  const nextPartsLength = nextProps.message.parts?.length ?? 0;
-  if (prevPartsLength !== nextPartsLength) {
+  // Check parts changes (for streaming tool invocations, sources, and reasoning)
+  const prevParts = prevProps.message.parts;
+  const nextParts = nextProps.message.parts;
+  if (prevParts !== nextParts) {
     return false;
   }
 

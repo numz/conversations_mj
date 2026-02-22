@@ -221,6 +221,15 @@ class ConfigView(drf.views.APIView):
             else:
                 dict_settings[setting] = getattr(settings, setting)
 
+        # Feature flags for optional custom features
+        # Individual flags are added by their respective features
+        dict_settings["feature_flags_custom"] = {
+            "reasoning_box_enabled": settings.REASONING_BOX_ENABLED,
+        }
+
+        # Tool display names for human-readable tool labels
+        dict_settings["tool_display_names"] = dict(settings.TOOL_DISPLAY_NAMES)
+
         dict_settings["theme_customization"] = self._load_theme_customization()
 
         dict_settings["chat_upload_accept"] = ",".join(settings.RAG_FILES_ACCEPTED_FORMATS)

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
+import { useConfig, useFeatureFlags } from '@/core/config/api';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -19,6 +20,7 @@ import {
 import { ChatError } from '@/features/chat/components/ChatError';
 import { InputChat } from '@/features/chat/components/InputChat';
 import { MessageItem } from '@/features/chat/components/MessageItem';
+import { ReasoningBox } from '@/features/chat/components/ReasoningBox';
 import { useClipboard } from '@/hook';
 import { useResponsiveStore } from '@/stores';
 
@@ -42,6 +44,7 @@ export const Chat = ({
   const { t } = useTranslation();
   const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
+  const featureFlags = useFeatureFlags();
 
   const streamProtocol = 'data'; // or 'text'
 
@@ -53,6 +56,9 @@ export const Chat = ({
   } = useChatPreferencesStore();
 
   const { data: llmConfig } = useLLMConfiguration();
+  const { data: config } = useConfig();
+  const toolDisplayNames: Record<string, string> =
+    (config?.tool_display_names as Record<string, string> | undefined) ?? {};
   const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
 
   const [conversationId, setConversationId] = useState(initialConversationId);
@@ -648,6 +654,7 @@ export const Chat = ({
                 conversationId={conversationId}
                 isSourceOpen={isSourceOpen}
                 isMobile={isMobile}
+                toolDisplayNames={toolDisplayNames}
                 onCopyToClipboard={copyToClipboard}
                 onOpenSources={openSources}
                 getMetadata={getMetadata}
@@ -655,8 +662,31 @@ export const Chat = ({
             ))}
           </Box>
         )}
-        {(status !== 'ready' && status !== 'streaming' && status !== 'error') ||
-        isUploadingFiles ? (
+        {/* Show ReasoningBox with "Thinking..." during submitted phase (when feature flag is active) */}
+        {status === 'submitted' &&
+          !isUploadingFiles &&
+          featureFlags.reasoning_box_enabled !== false && (
+            <Box
+              $width="100%"
+              $maxWidth="750px"
+              $margin={{ all: 'auto', top: 'base', bottom: '0' }}
+              $padding={{ left: '13px', bottom: 'md' }}
+              $css={`
+                ${streamingMessageHeight ? `min-height: ${streamingMessageHeight}px;` : 'auto'}
+              `}
+            >
+              <ReasoningBox
+                reasoning=""
+                isStreaming={true}
+                processingLabel={t('Thinking...')}
+              />
+            </Box>
+          )}
+        {/* Fallback: generic loader when reasoning box is disabled or uploading */}
+        {((status === 'submitted' &&
+          !isUploadingFiles &&
+          featureFlags.reasoning_box_enabled === false) ||
+          isUploadingFiles) && (
           <Box
             $direction="row"
             $align="start"
@@ -674,7 +704,7 @@ export const Chat = ({
               {isUploadingFiles ? t('Uploading files...') : t('Thinking...')}
             </Text>
           </Box>
-        ) : null}
+        )}
         {status === 'error' && !isUploadingFiles && (
           <ChatError
             hasLastSubmission={!!lastSubmissionRef.current}
