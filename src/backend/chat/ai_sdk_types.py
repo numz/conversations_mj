@@ -276,10 +276,12 @@ class UIMessage(Message):
     Attributes:
         parts: List of UI parts that make up the message content.
         usage: Optional extended usage metrics for assistant messages.
+        feedback: Optional user feedback for assistant messages.
     """
 
     parts: List[UIPart]
     usage: Optional["ExtendedUsage"] = None
+    feedback: Optional[Literal["positive", "negative"]] = None
 
 
 class CreateMessage(BaseModel):
