@@ -138,6 +138,7 @@ export const FeedbackButtons = ({
 
       setSelectedFeedback(value);
       onFeedbackUpdate?.(value);
+      showToast('success', t('Merci de votre retour'));
     } catch (error) {
       setSelectedFeedback(value);
       console.error('Error sending feedback:', error);
