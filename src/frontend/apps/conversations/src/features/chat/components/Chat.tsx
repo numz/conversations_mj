@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { APIError, errorCauses, fetchAPI } from '@/api';
 import { Box, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config/api';
 import { useUploadFile } from '@/features/attachments/hooks/useUploadFile';
 import { useChat } from '@/features/chat/api/useChat';
 import { getConversation } from '@/features/chat/api/useConversation';
@@ -42,6 +43,8 @@ export const Chat = ({
   const { t } = useTranslation();
   const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
+  const featureFlags = useFeatureFlags();
+  const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
 
   const streamProtocol = 'data'; // or 'text'
 
@@ -470,13 +473,17 @@ export const Chat = ({
             id: initialConversationId,
           });
           if (!ignore) {
-            // Inject persisted feedback into messages
-            const feedbacks = conversation.message_feedbacks || {};
-            const messagesWithFeedback = conversation.messages.map((msg) => ({
-              ...msg,
-              feedback: feedbacks[msg.id]?.value || null,
-            }));
-            setInitialConversationMessages(messagesWithFeedback);
+            if (localFeedbackEnabled) {
+              // Inject persisted feedback into messages
+              const feedbacks = conversation.message_feedbacks || {};
+              const messagesWithFeedback = conversation.messages.map((msg) => ({
+                ...msg,
+                feedback: feedbacks[msg.id]?.value || null,
+              }));
+              setInitialConversationMessages(messagesWithFeedback);
+            } else {
+              setInitialConversationMessages(conversation.messages);
+            }
             setHasInitialized(true);
           }
         } catch {
@@ -492,8 +499,8 @@ export const Chat = ({
     return () => {
       ignore = true;
     };
-    // Only run when initialConversationId or pendingInput changes
-  }, [initialConversationId, pendingInput]);
+    // Only run when initialConversationId, pendingInput, or localFeedbackEnabled changes
+  }, [initialConversationId, pendingInput, localFeedbackEnabled]);
 
   useEffect(() => {
     if (

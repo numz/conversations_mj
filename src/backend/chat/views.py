@@ -304,29 +304,42 @@ class ChatViewSet(  # pylint: disable=too-many-ancestors, abstract-method
         message_id = serializer.validated_data["message_id"]
         name = serializer.validated_data["name"]
         value = serializer.validated_data["value"]
-        comment = serializer.validated_data.get("comment", "")
 
-        # 1. Persist feedback locally in database
-        feedback_data = {"value": value}
-        if comment:
-            feedback_data["comment"] = comment
-        conversation.message_feedbacks[message_id] = feedback_data
-        conversation.save(update_fields=["message_feedbacks"])
-        logger.info("Feedback '%s' saved for message %s in DB", value, message_id)
+        if settings.LOCAL_FEEDBACK_ENABLED:
+            # Local feedback: persist in database + optional Langfuse
+            comment = serializer.validated_data.get("comment", "")
+            feedback_data = {"value": value}
+            if comment:
+                feedback_data["comment"] = comment
+            conversation.message_feedbacks[message_id] = feedback_data
+            conversation.save(update_fields=["message_feedbacks"])
+            logger.info("Feedback '%s' saved for message %s in DB", value, message_id)
 
-        # 2. Optionally send to Langfuse (requires trace- prefix)
-        if message_id.startswith("trace-"):
+            if message_id.startswith("trace-"):
+                trace_id = message_id[len("trace-"):]
+                try:
+                    langfuse.get_client().create_score(
+                        name=name,
+                        value=value,
+                        trace_id=trace_id,
+                        score_id=f"{trace_id}-{self.request.user.pk}",
+                        data_type="CATEGORICAL",
+                    )
+                except (ConnectionError, ValueError, RuntimeError) as e:
+                    logger.error("Failed to send score to Langfuse: %s", e)
+        else:
+            # Original behavior: Langfuse only, trace- prefix required
+            if not message_id.startswith("trace-"):
+                raise ValidationError("Invalid message_id, no trace attached.")
+
             trace_id = message_id[len("trace-"):]
-            try:
-                langfuse.get_client().create_score(
-                    name=name,
-                    value=value,
-                    trace_id=trace_id,
-                    score_id=f"{trace_id}-{self.request.user.pk}",
-                    data_type="CATEGORICAL",
-                )
-            except Exception as e:  # pylint: disable=broad-except
-                logger.error("Failed to send score to Langfuse: %s", e)
+            langfuse.get_client().create_score(
+                name=name,
+                value=value,
+                trace_id=trace_id,
+                score_id=f"{trace_id}-{self.request.user.pk}",
+                data_type="CATEGORICAL",
+            )
 
         return Response({"status": "OK"}, status=status.HTTP_200_OK)
 

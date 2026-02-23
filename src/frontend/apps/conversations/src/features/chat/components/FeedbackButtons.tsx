@@ -10,6 +10,7 @@ interface FeedbackButtonsProps {
   messageId: string;
   initialFeedback?: 'positive' | 'negative' | null;
   onFeedbackUpdate?: (feedback: 'positive' | 'negative' | null) => void;
+  localFeedbackEnabled?: boolean;
 }
 
 const ThumbUp = () => (
@@ -94,6 +95,7 @@ export const FeedbackButtons = ({
   messageId,
   initialFeedback,
   onFeedbackUpdate,
+  localFeedbackEnabled,
 }: FeedbackButtonsProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -147,7 +149,11 @@ export const FeedbackButtons = ({
   };
 
   const handleThumbDown = () => {
-    setIsModalOpen(true);
+    if (localFeedbackEnabled) {
+      setIsModalOpen(true);
+    } else {
+      void handleScore('negative');
+    }
   };
 
   const handleCloseModal = () => {
@@ -205,66 +211,67 @@ export const FeedbackButtons = ({
         />
       </Box>
 
-      <Modal
-        isOpen={isModalOpen}
-        closeOnClickOutside
-        onClose={handleCloseModal}
-        aria-label={t('Modal de retour')}
-        leftActions={
-          <Button
-            aria-label={t('Annuler')}
-            color="tertiary"
-            onClick={handleCloseModal}
-          >
-            {t('Annuler')}
-          </Button>
-        }
-        rightActions={
-          <Button
-            aria-label={t('Envoyer le retour')}
-            color="primary"
-            onClick={() => void handleSubmitFeedback()}
-          >
-            {t('Envoyer')}
-          </Button>
-        }
-        size={ModalSize.SMALL}
-        title={
-          <Text $size="h6" as="h6" $margin={{ all: '0' }} $align="flex-start">
-            {t('Pourquoi cette réponse ne vous convient pas ?')}
-          </Text>
-        }
-      >
-        <Box
-          $direction="column"
-          $gap="20px"
-          className="mt-s feedback-modal-content"
-        >
-          <Box $direction="column" $gap="8px">
-            <Text $size="s" $weight="500" $theme="greyscale" $variation="700">
-              {t('Sélectionnez les problèmes rencontrés')}
+      {localFeedbackEnabled && (
+        <Modal
+          isOpen={isModalOpen}
+          closeOnClickOutside
+          onClose={handleCloseModal}
+          aria-label={t('Modal de retour')}
+          leftActions={
+            <Button
+              aria-label={t('Annuler')}
+              color="tertiary"
+              onClick={handleCloseModal}
+            >
+              {t('Annuler')}
+            </Button>
+          }
+          rightActions={
+            <Button
+              aria-label={t('Envoyer le retour')}
+              color="primary"
+              onClick={() => void handleSubmitFeedback()}
+            >
+              {t('Envoyer')}
+            </Button>
+          }
+          size={ModalSize.SMALL}
+          title={
+            <Text $size="h6" as="h6" $margin={{ all: '0' }} $align="flex-start">
+              {t('Pourquoi cette réponse ne vous convient pas ?')}
             </Text>
-            <Box
-              $css={`
+          }
+        >
+          <Box
+            $direction="column"
+            $gap="20px"
+            className="mt-s feedback-modal-content"
+          >
+            <Box $direction="column" $gap="8px">
+              <Text $size="s" $weight="500" $theme="greyscale" $variation="700">
+                {t('Sélectionnez les problèmes rencontrés')}
+              </Text>
+              <Box
+                $css={`
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
               `}
-            >
-              {FEEDBACK_CATEGORIES.map((category) => {
-                const isSelected = selectedCategories.includes(category.id);
-                return (
-                  <Box
-                    key={category.id}
-                    as="button"
-                    type="button"
-                    onClick={() => toggleCategory(category.id)}
-                    $direction="row"
-                    $align="center"
-                    $gap="6px"
-                    $padding={{ horizontal: 'sm', vertical: 'xs' }}
-                    $radius="sm"
-                    $css={`
+              >
+                {FEEDBACK_CATEGORIES.map((category) => {
+                  const isSelected = selectedCategories.includes(category.id);
+                  return (
+                    <Box
+                      key={category.id}
+                      as="button"
+                      type="button"
+                      onClick={() => toggleCategory(category.id)}
+                      $direction="row"
+                      $align="center"
+                      $gap="6px"
+                      $padding={{ horizontal: 'sm', vertical: 'xs' }}
+                      $radius="sm"
+                      $css={`
                       border: 2px solid ${
                         isSelected
                           ? 'var(--c--theme--colors--primary-600, #3E5DE7)'
@@ -292,25 +299,26 @@ export const FeedbackButtons = ({
                         transform: scale(0.97);
                       }
                     `}
-                  >
-                    {t(category.label)}
-                  </Box>
-                );
-              })}
+                    >
+                      {t(category.label)}
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
-          </Box>
 
-          <TextArea
-            label={t('Votre commentaire (facultatif)')}
-            value={feedbackComment}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setFeedbackComment(e.target.value)
-            }
-            rows={4}
-            maxLength={1000}
-          />
-        </Box>
-      </Modal>
+            <TextArea
+              label={t('Votre commentaire (facultatif)')}
+              value={feedbackComment}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setFeedbackComment(e.target.value)
+              }
+              rows={4}
+              maxLength={1000}
+            />
+          </Box>
+        </Modal>
+      )}
     </>
   );
 };

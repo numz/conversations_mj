@@ -44,6 +44,7 @@ Flags default to `false` when not present in the API response, preserving upstre
 | `prompt_suggestions_enabled`    | `PROMPT_SUGGESTIONS_ENABLED`     | `true`  | Show clickable prompt suggestion cards on empty chat                   |
 | `conversation_grouping_enabled` | `CONVERSATION_GROUPING_ENABLED`  | `true`  | Group conversations by date in the left panel                          |
 | `inline_rename_enabled`         | `INLINE_RENAME_ENABLED`          | `true`  | Inline conversation renaming with typewriter animation                 |
+| `local_feedback_enabled`        | `LOCAL_FEEDBACK_ENABLED`         | `false` | Persist feedback locally in DB with comment/categories modal           |
 
 ## Adding a New Feature Flag
 

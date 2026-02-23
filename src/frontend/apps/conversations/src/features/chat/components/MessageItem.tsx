@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Icon, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config/api';
 import { AttachmentList } from '@/features/chat/components/AttachmentList';
 import { FeedbackButtons } from '@/features/chat/components/FeedbackButtons';
 import {
@@ -191,6 +192,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   onFeedbackUpdate,
 }) => {
   const { t } = useTranslation();
+  const featureFlags = useFeatureFlags();
+  const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
 
   const shouldApplyStreamingHeight =
     isLastAssistantMessage &&
@@ -450,16 +453,25 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                   )}
                 </Box>
                 <Box $direction="row" $gap="4px">
-                  {conversationId && message.id && (
-                    <FeedbackButtons
-                      conversationId={conversationId}
-                      messageId={message.id}
-                      initialFeedback={message.feedback}
-                      onFeedbackUpdate={(feedback) =>
-                        onFeedbackUpdate?.(message.id, feedback)
-                      }
-                    />
-                  )}
+                  {conversationId &&
+                    message.id &&
+                    (localFeedbackEnabled ||
+                      message.id.startsWith('trace-')) && (
+                      <FeedbackButtons
+                        conversationId={conversationId}
+                        messageId={message.id}
+                        initialFeedback={
+                          localFeedbackEnabled ? message.feedback : undefined
+                        }
+                        onFeedbackUpdate={
+                          localFeedbackEnabled
+                            ? (feedback) =>
+                                onFeedbackUpdate?.(message.id, feedback)
+                            : undefined
+                        }
+                        localFeedbackEnabled={localFeedbackEnabled}
+                      />
+                    )}
                 </Box>
               </Box>
             )}
