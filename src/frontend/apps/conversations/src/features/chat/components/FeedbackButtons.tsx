@@ -210,23 +210,23 @@ export const FeedbackButtons = ({
         closeOnClickOutside
         onClose={handleCloseModal}
         aria-label={t('Modal de retour')}
+        leftActions={
+          <Button
+            aria-label={t('Annuler')}
+            color="tertiary"
+            onClick={handleCloseModal}
+          >
+            {t('Annuler')}
+          </Button>
+        }
         rightActions={
-          <>
-            <Button
-              aria-label={t('Annuler')}
-              color="tertiary"
-              onClick={handleCloseModal}
-            >
-              {t('Annuler')}
-            </Button>
-            <Button
-              aria-label={t('Envoyer le retour')}
-              color="primary"
-              onClick={() => void handleSubmitFeedback()}
-            >
-              {t('Envoyer')}
-            </Button>
-          </>
+          <Button
+            aria-label={t('Envoyer le retour')}
+            color="primary"
+            onClick={() => void handleSubmitFeedback()}
+          >
+            {t('Envoyer')}
+          </Button>
         }
         size={ModalSize.SMALL}
         title={
@@ -265,31 +265,27 @@ export const FeedbackButtons = ({
                     $padding={{ horizontal: 'sm', vertical: 'xs' }}
                     $radius="sm"
                     $css={`
-                      border: 1.5px solid ${
+                      border: 2px solid ${
                         isSelected
-                          ? 'var(--c--theme--colors--primary-500)'
-                          : 'var(--c--theme--colors--greyscale-200)'
+                          ? 'var(--c--theme--colors--primary-600, #3E5DE7)'
+                          : 'var(--c--theme--colors--greyscale-300, #ccc)'
                       };
                       background: ${
                         isSelected
-                          ? 'var(--c--theme--colors--primary-500)'
-                          : 'var(--c--theme--colors--greyscale-50)'
+                          ? 'var(--c--theme--colors--primary-600, #3E5DE7)'
+                          : 'transparent'
                       };
-                      color: ${
-                        isSelected
-                          ? 'white'
-                          : 'var(--c--theme--colors--greyscale-700)'
-                      };
+                      color: ${isSelected ? '#fff' : 'inherit'};
                       font-size: 0.8125rem;
                       font-weight: 500;
                       cursor: pointer;
                       transition: all 0.15s ease;
                       &:hover {
-                        border-color: var(--c--theme--colors--primary-400);
+                        border-color: var(--c--theme--colors--primary-600, #3E5DE7);
                         background: ${
                           isSelected
-                            ? 'var(--c--theme--colors--primary-600)'
-                            : 'var(--c--theme--colors--greyscale-100)'
+                            ? 'var(--c--theme--colors--primary-700, #2D4AD4)'
+                            : 'rgba(62, 93, 231, 0.1)'
                         };
                       }
                       &:active {
