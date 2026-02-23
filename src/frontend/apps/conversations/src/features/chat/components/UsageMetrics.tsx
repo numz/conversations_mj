@@ -85,9 +85,7 @@ export const UsageMetrics = ({ usage }: UsageMetricsProps) => {
             $size="16px"
           />
           <Text $theme="greyscale" $variation="500" $size="11px">
-            {carbonMg < 0.01
-              ? `<0.01 mg CO2`
-              : `${carbonMg.toFixed(2)} mg CO2`}
+            {carbonMg < 0.01 ? `<0.01 mg CO2` : `${carbonMg.toFixed(2)} mg CO2`}
           </Text>
         </Box>
       )}
@@ -107,9 +105,7 @@ export const UsageMetrics = ({ usage }: UsageMetricsProps) => {
             $size="16px"
           />
           <Text $theme="greyscale" $variation="500" $size="11px">
-            {energyWh < 0.001
-              ? `<0.001 Wh`
-              : `${energyWh.toFixed(3)} Wh`}
+            {energyWh < 0.001 ? `<0.001 Wh` : `${energyWh.toFixed(3)} Wh`}
           </Text>
         </Box>
       )}

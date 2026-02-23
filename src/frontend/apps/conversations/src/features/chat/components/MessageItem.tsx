@@ -481,7 +481,12 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 $gap="6px"
                 $margin={{ top: 'base' }}
               >
-                <Box $direction="row" $gap="4px" $align="center" $css="flex-wrap: nowrap;">
+                <Box
+                  $direction="row"
+                  $gap="4px"
+                  $align="center"
+                  $css="flex-wrap: nowrap;"
+                >
                   <Box
                     $direction="row"
                     $align="center"
@@ -534,9 +539,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                       </Text>
                     </Box>
                   )}
-                  {displayUsage && (
-                    <UsageMetrics usage={displayUsage} />
-                  )}
+                  {displayUsage && <UsageMetrics usage={displayUsage} />}
                 </Box>
                 <Box $direction="row" $gap="4px">
                   {conversationId &&

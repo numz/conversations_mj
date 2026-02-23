@@ -111,6 +111,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | PROMPT_SUGGESTIONS                              | JSON array of prompt suggestions. Format: `[{"icon":"gavel","title":"...","prompt":"..."}]`                                       | (built-in defaults)                                     |
 | FEEDBACK_FORM_URL                               | URL for the feedback form. Overrides the default URL in the feedback component                                                    |                                                         |
 | FEEDBACK_TCHAP_URL                              | URL for the Tchap feedback channel. Overrides the default URL in the feedback component                                           |                                                         |
+| EXTENDED_METRICS_ENABLED                        | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages                                   | false                                                   |
+| EXTENDED_METRICS_MAPPING                        | JSON dict mapping metric names to dot-notation paths in LLM usage response (e.g. `{"cost":"cost","carbon_kwh_min":"carbon.kWh.min"}`) | (built-in defaults)                                 |
 
 
 ## conversations-frontend image

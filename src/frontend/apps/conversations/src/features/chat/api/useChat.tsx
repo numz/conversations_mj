@@ -6,10 +6,7 @@ import { fetchAPI } from '@/api';
 import { KEY_LIST_CONVERSATION } from '@/features/chat/api/useConversations';
 import { useChatPreferencesStore } from '@/features/chat/stores/useChatPreferencesStore';
 
-import {
-  ExtendedUsage,
-  ExtendedUsageAnnotation,
-} from '../types';
+import { ExtendedUsage, ExtendedUsageAnnotation } from '../types';
 
 const fetchAPIAdapter = (input: RequestInfo | URL, init?: RequestInit) => {
   let url: string;
@@ -69,9 +66,7 @@ export type UseChatResult = ReturnType<typeof useAiSdkChat> & {
   usageByMessageId: Map<string, ExtendedUsage>;
 };
 
-export function useChat(
-  options: Omit<UseChatOptions, 'fetch'>,
-): UseChatResult {
+export function useChat(options: Omit<UseChatOptions, 'fetch'>): UseChatResult {
   const queryClient = useQueryClient();
 
   const [usageByMessageId, setUsageByMessageId] = useState<

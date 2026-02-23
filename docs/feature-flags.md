@@ -44,6 +44,7 @@ Flags default to `false` when not present in the API response, preserving upstre
 | `prompt_suggestions_enabled`    | `PROMPT_SUGGESTIONS_ENABLED`     | `true`  | Show clickable prompt suggestion cards on empty chat                   |
 | `conversation_grouping_enabled` | `CONVERSATION_GROUPING_ENABLED`  | `true`  | Group conversations by date in the left panel                          |
 | `inline_rename_enabled`         | `INLINE_RENAME_ENABLED`          | `true`  | Inline conversation renaming with typewriter animation                 |
+| `extended_metrics_enabled`      | `EXTENDED_METRICS_ENABLED`       | `false` | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages |
 
 ## Adding a New Feature Flag
 
