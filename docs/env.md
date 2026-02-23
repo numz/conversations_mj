@@ -98,6 +98,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| EXTENDED_METRICS_ENABLED                        | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages                                   | false                                                   |
+| EXTENDED_METRICS_MAPPING                        | JSON dict mapping metric names to dot-notation paths in LLM usage response (e.g. `{"cost":"cost","carbon_kwh_min":"carbon.kWh.min"}`) | (built-in defaults)                                 |
 
 
 ## conversations-frontend image
