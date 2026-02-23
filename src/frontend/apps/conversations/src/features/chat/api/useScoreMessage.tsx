@@ -4,18 +4,24 @@ interface ScoreMessageParams {
   conversationId: string;
   message_id: string;
   value: 'positive' | 'negative';
+  comment?: string;
+  categories?: string[];
 }
 
 export const scoreMessage = async ({
   conversationId,
   message_id,
   value,
+  comment,
+  categories,
 }: ScoreMessageParams): Promise<void> => {
   const response = await fetchAPI(`chats/${conversationId}/score-message/`, {
     method: 'POST',
     body: JSON.stringify({
       message_id,
       value,
+      ...(comment && { comment }),
+      ...(categories && categories.length > 0 && { categories }),
     }),
   });
 

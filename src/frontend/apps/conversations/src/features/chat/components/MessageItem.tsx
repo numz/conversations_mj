@@ -1,4 +1,4 @@
-import { Message, SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
+import { SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,7 @@ import {
 } from '@/features/chat/components/MessageBlock';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
+import { ChatMessage } from '@/features/chat/types';
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
@@ -156,7 +157,7 @@ interface SourceMetadata {
 }
 
 export interface MessageItemProps {
-  message: Message;
+  message: ChatMessage;
   isLastMessage: boolean;
   isLastAssistantMessage: boolean;
   isFirstConversationMessage: boolean;
@@ -168,6 +169,10 @@ export interface MessageItemProps {
   onCopyToClipboard: (content: string) => void;
   onOpenSources: (messageId: string) => void;
   getMetadata: (url: string) => SourceMetadata | undefined;
+  onFeedbackUpdate?: (
+    messageId: string,
+    feedback: 'positive' | 'negative' | null,
+  ) => void;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -183,6 +188,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   onCopyToClipboard,
   onOpenSources,
   getMetadata,
+  onFeedbackUpdate,
 }) => {
   const { t } = useTranslation();
 
@@ -444,14 +450,16 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                   )}
                 </Box>
                 <Box $direction="row" $gap="4px">
-                  {conversationId &&
-                    message.id &&
-                    message.id.startsWith('trace-') && (
-                      <FeedbackButtons
-                        conversationId={conversationId}
-                        messageId={message.id}
-                      />
-                    )}
+                  {conversationId && message.id && (
+                    <FeedbackButtons
+                      conversationId={conversationId}
+                      messageId={message.id}
+                      initialFeedback={message.feedback}
+                      onFeedbackUpdate={(feedback) =>
+                        onFeedbackUpdate?.(message.id, feedback)
+                      }
+                    />
+                  )}
                 </Box>
               </Box>
             )}
@@ -532,6 +540,9 @@ const arePropsEqual = (
     return false;
   }
   if (prevProps.conversationId !== nextProps.conversationId) {
+    return false;
+  }
+  if (prevProps.message.feedback !== nextProps.message.feedback) {
     return false;
   }
 

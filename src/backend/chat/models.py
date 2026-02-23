@@ -73,6 +73,13 @@ class ChatConversation(BaseModel):
         help_text="Agent usage for the chat conversation, provided by OpenAI API",
     )
 
+    message_feedbacks = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="User feedback per message ID: "
+        "{message_id: {value: 'positive'|'negative', comment?: string}}",
+    )
+
     collection_id = models.CharField(
         blank=True,
         null=True,

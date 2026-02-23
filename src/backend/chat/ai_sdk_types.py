@@ -275,9 +275,11 @@ class UIMessage(Message):
 
     Attributes:
         parts: List of UI parts that make up the message content.
+        feedback: Optional user feedback for assistant messages.
     """
 
     parts: List[UIPart]
+    feedback: Optional[Literal["positive", "negative"]] = None
 
 
 class CreateMessage(BaseModel):
