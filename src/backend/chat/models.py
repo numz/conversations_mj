@@ -73,6 +73,12 @@ class ChatConversation(BaseModel):
         help_text="Agent usage for the chat conversation, provided by OpenAI API",
     )
 
+    message_usages = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Extended usage metrics per message ID (tokens, cost, carbon, latency)",
+    )
+
     collection_id = models.CharField(
         blank=True,
         null=True,

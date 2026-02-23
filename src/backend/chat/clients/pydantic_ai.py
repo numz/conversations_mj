@@ -1132,7 +1132,11 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 carbon_data = extended_usage["carbon"]
                 carbon = CarbonMetrics(
                     kWh=CarbonRange(**carbon_data["kWh"]) if carbon_data.get("kWh") else None,
-                    kgCO2eq=CarbonRange(**carbon_data["kgCO2eq"]) if carbon_data.get("kgCO2eq") else None,
+                    kgCO2eq=(
+                        CarbonRange(**carbon_data["kgCO2eq"])
+                        if carbon_data.get("kgCO2eq")
+                        else None
+                    ),
                 )
             _output_ui_message.usage = ExtendedUsage(
                 prompt_tokens=extended_usage.get("prompt_tokens", 0),
@@ -1152,6 +1156,12 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             _output_ui_message,
         ]
         self.conversation.agent_usage = usage
+
+        # Also store usage in message_usages dict (anticipates Feature 22 migration)
+        if extended_usage and model_response_message_id:
+            self.conversation.message_usages[model_response_message_id] = (
+                _output_ui_message.usage.model_dump() if _output_ui_message.usage else {}
+            )
 
         final_output_json = json.loads(
             ModelMessagesTypeAdapter.dump_json(final_output).decode("utf-8")
