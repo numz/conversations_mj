@@ -24,12 +24,17 @@ export type ExtendedUsageAnnotation = ExtendedUsage & {
 };
 
 export type ChatMessage = Message & {
+  feedback?: 'positive' | 'negative' | null;
   usage?: ExtendedUsage;
 };
 
 export interface ChatConversation {
   id: string;
   messages: ChatMessage[];
+  message_feedbacks?: Record<
+    string,
+    { value: 'positive' | 'negative'; comment?: string }
+  >;
   created_at: string;
   updated_at: string;
   title?: string;

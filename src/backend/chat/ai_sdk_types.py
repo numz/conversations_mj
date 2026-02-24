@@ -243,6 +243,33 @@ UIPart = Union[
 ]
 
 
+# Extended usage metrics (carbon, cost, latency)
+
+
+class CarbonRange(BaseModel):
+    """Represents a min/max range for carbon metrics."""
+
+    min: Optional[float] = None
+    max: Optional[float] = None
+
+
+class CarbonMetrics(BaseModel):
+    """Represents carbon footprint metrics."""
+
+    kWh: Optional[CarbonRange] = None
+    kgCO2eq: Optional[CarbonRange] = None
+
+
+class ExtendedUsage(BaseModel):
+    """Extended usage metrics including carbon footprint and latency."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    cost: Optional[float] = None
+    carbon: Optional[CarbonMetrics] = None
+    latency_ms: Optional[float] = None
+
+
 # Message and related types
 class Message(BaseModel):
     """
@@ -275,11 +302,13 @@ class UIMessage(Message):
 
     Attributes:
         parts: List of UI parts that make up the message content.
+        feedback: Optional user feedback for assistant messages.
         usage: Optional extended usage metrics for assistant messages.
     """
 
     parts: List[UIPart]
-    usage: Optional["ExtendedUsage"] = None
+    feedback: Optional[Literal["positive", "negative"]] = None
+    usage: Optional[ExtendedUsage] = None
 
 
 class CreateMessage(BaseModel):
@@ -414,30 +443,6 @@ class LanguageModelUsage(BaseModel):
     promptTokens: int
     completionTokens: int
     totalTokens: int
-
-
-class CarbonRange(BaseModel):
-    """Min/max range for carbon metrics."""
-
-    min: float
-    max: float
-
-
-class CarbonMetrics(BaseModel):
-    """Carbon footprint metrics from OpenGateLLM."""
-
-    kWh: Optional[CarbonRange] = None
-    kgCO2eq: Optional[CarbonRange] = None
-
-
-class ExtendedUsage(BaseModel):
-    """Extended usage metrics per message (tokens, latency, cost, carbon)."""
-
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    cost: Optional[float] = None
-    carbon: Optional[CarbonMetrics] = None
-    latency_ms: Optional[float] = None
 
 
 class AssistantMessageContentText(BaseModel):

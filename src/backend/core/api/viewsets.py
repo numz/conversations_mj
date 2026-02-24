@@ -225,6 +225,7 @@ class ConfigView(drf.views.APIView):
         # Individual flags are added by their respective features
         dict_settings["feature_flags_custom"] = {
             "extended_metrics_enabled": getattr(settings, "EXTENDED_METRICS_ENABLED", False),
+            "message_architecture_enabled": settings.MESSAGE_ARCHITECTURE_ENABLED,
         }
 
         dict_settings["theme_customization"] = self._load_theme_customization()
