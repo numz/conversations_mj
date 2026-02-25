@@ -75,6 +75,7 @@ and raises `StreamCancelException` to abort the generator.
 import asyncio
 import dataclasses
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -122,15 +123,15 @@ from pydantic_ai.messages import (
 from core.feature_flags.helpers import is_feature_enabled
 
 from chat import models
-from chat.agents.conversation import ConversationAgent, TitleGenerationAgent
-from chat.agents.local_media_url_processors import (
-    update_history_local_urls,
-    update_local_urls,
-)
 from chat.agents.base import (
     clear_current_metrics,
     get_current_metrics,
     set_metrics_from_usage,
+)
+from chat.agents.conversation import ConversationAgent, TitleGenerationAgent
+from chat.agents.local_media_url_processors import (
+    update_history_local_urls,
+    update_local_urls,
 )
 from chat.ai_sdk_types import (
     CarbonMetrics,
@@ -252,6 +253,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         self._is_document_upload_enabled = is_feature_enabled(self.user, "document_upload")
         self._is_web_search_enabled = is_feature_enabled(self.user, "web_search")
         self._fake_streaming_delay = settings.FAKE_STREAMING_DELAY
+        self._message_architecture_enabled = settings.MESSAGE_ARCHITECTURE_ENABLED
 
         self._context_deps = ContextDeps(
             conversation=conversation,
@@ -939,7 +941,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
 
         return extended
 
-    async def _finalize_conversation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    async def _finalize_conversation(  # noqa: PLR0913  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         new_messages: list,
         run_output,
@@ -947,6 +949,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         state: StreamingState,
         image_key_mapping: Dict[str, str],
         stream_start_time: float = 0,
+        agent_start_time: float = 0,
     ) -> AsyncGenerator[events_v4.Event, None]:
         """Finalize conversation: save, generate title, emit finish events."""
         await self._agent_stop_streaming(force_cache_check=True)
@@ -966,11 +969,17 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             model_response_message_id=state.model_response_message_id,
             image_key_mapping=image_key_mapping or None,
             extended_usage=extended_usage,
+            agent_start_time=agent_start_time,
         )
         generated_title = None
 
         # Auto-generate title after N user messages if not manually set
-        user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
+        if self._message_architecture_enabled:
+            user_messages_count = sum(
+                1 for msg in self.conversation.get_computed_messages() if msg.role == "user"
+            )
+        else:
+            user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
 
         should_generate_title = (
             user_messages_count == settings.AUTO_TITLE_AFTER_USER_MESSAGES
@@ -1027,6 +1036,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             return
 
         stream_start_time = time.monotonic()
+        _agent_start_time = time.time()
 
         # Clear any previous extended metrics before starting
         clear_current_metrics()
@@ -1107,10 +1117,11 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
 
         async for event in self._finalize_conversation(
             new_messages, run_output, usage, state, image_key_mapping, stream_start_time,
+            agent_start_time=_agent_start_time,
         ):
             yield event
 
-    def _prepare_update_conversation(
+    def _prepare_update_conversation(  # noqa: PLR0913
         self,
         *,
         final_output: List[ModelRequest | ModelMessage],
@@ -1119,6 +1130,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         model_response_message_id: str | None = None,
         image_key_mapping: Optional[Dict[str, str]] = None,
         extended_usage: Optional[Dict] = None,
+        agent_start_time: float = 0,
     ):  # pylint: disable=too-many-arguments
         """Save everything related to the conversation."""
         _merged_final_output_request = ModelRequest(
@@ -1154,7 +1166,11 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 carbon_data = extended_usage["carbon"]
                 carbon = CarbonMetrics(
                     kWh=CarbonRange(**carbon_data["kWh"]) if carbon_data.get("kWh") else None,
-                    kgCO2eq=CarbonRange(**carbon_data["kgCO2eq"]) if carbon_data.get("kgCO2eq") else None,
+                    kgCO2eq=(
+                        CarbonRange(**carbon_data["kgCO2eq"])
+                        if carbon_data.get("kgCO2eq")
+                        else None
+                    ),
                 )
             _output_ui_message.usage = ExtendedUsage(
                 prompt_tokens=extended_usage.get("prompt_tokens", 0),
@@ -1175,11 +1191,43 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         ]
         self.conversation.agent_usage = usage
 
+        # Also store usage in message_usages dict (anticipates Feature 22 migration)
+        if extended_usage and model_response_message_id:
+            self.conversation.message_usages[model_response_message_id] = (
+                _output_ui_message.usage.model_dump() if _output_ui_message.usage else {}
+            )
+
         final_output_json = json.loads(
             ModelMessagesTypeAdapter.dump_json(final_output).decode("utf-8")
         )
         logger.debug("final_output_json: %s", final_output_json)
         self.conversation.pydantic_messages += final_output_json
+
+        # New architecture: compute stable ID, store usage/sources in normalized fields
+        if self._message_architecture_enabled and final_output_json:
+            assistant_msg_idx = len(self.conversation.pydantic_messages) - 1
+            stable_id = hashlib.md5(  # noqa: S324
+                f"{self.conversation.pk}-{assistant_msg_idx}".encode()
+            ).hexdigest()[:8]
+            stable_message_id = f"msg-{stable_id}"
+
+            # Store usage metrics per message
+            latency_ms = (
+                (time.time() - agent_start_time) * 1000
+                if agent_start_time
+                else None
+            )
+            self.conversation.message_usages[stable_message_id] = {
+                "prompt_tokens": usage.get("promptTokens", 0),
+                "completion_tokens": usage.get("completionTokens", 0),
+                "latency_ms": latency_ms,
+            }
+
+            # Store sources per message
+            if ui_sources:
+                self.conversation.message_sources[stable_message_id] = [
+                    source.model_dump(mode="json") for source in ui_sources
+                ]
 
     async def _generate_title(self) -> str | None:
         """Generate a title for the conversation using LLM based on first messages."""
@@ -1188,9 +1236,13 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         # Note: We intentionally use only msg.content for title generation.
         # Parts containing tool invocations or reasoning are excluded as they
         # don't contribute to a meaningful context here
+        if self._message_architecture_enabled:
+            msgs = self.conversation.get_computed_messages()
+        else:
+            msgs = self.conversation.messages
         context = "\n".join(
             f"{msg.role}: {(msg.content or '')[:300]}"  # Limit content length per message
-            for msg in self.conversation.messages
+            for msg in msgs
             if msg.content
         )
 

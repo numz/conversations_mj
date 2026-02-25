@@ -218,6 +218,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   const { t } = useTranslation();
   const featureFlags = useFeatureFlags();
   const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
+  const messageArchitectureEnabled =
+    !!featureFlags.message_architecture_enabled;
 
   const shouldApplyStreamingHeight =
     isLastAssistantMessage &&
@@ -551,6 +553,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                   {conversationId &&
                     message.id &&
                     (localFeedbackEnabled ||
+                      messageArchitectureEnabled ||
                       message.id.startsWith('trace-')) && (
                       <FeedbackButtons
                         conversationId={conversationId}

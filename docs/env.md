@@ -114,6 +114,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | EXTENDED_METRICS_ENABLED                        | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages                                   | false                                                   |
 | EXTENDED_METRICS_MAPPING                        | JSON dict mapping metric names to dot-notation paths in LLM usage response (e.g. `{"cost":"cost","carbon_kwh_min":"carbon.kWh.min"}`) | (built-in defaults)                                 |
 | LOCAL_FEEDBACK_ENABLED                          | Enable local feedback persistence with comment/categories modal                                                                   | false                                                   |
+| MESSAGE_ARCHITECTURE_ENABLED                    | Enable message architecture overhaul: compute messages from pydantic_messages with stable IDs                                     | false                                                   |
 
 
 ## conversations-frontend image

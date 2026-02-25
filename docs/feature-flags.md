@@ -46,6 +46,7 @@ Flags default to `false` when not present in the API response, preserving upstre
 | `inline_rename_enabled`         | `INLINE_RENAME_ENABLED`          | `true`  | Inline conversation renaming with typewriter animation                 |
 | `extended_metrics_enabled`      | `EXTENDED_METRICS_ENABLED`       | `false` | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages |
 | `local_feedback_enabled`        | `LOCAL_FEEDBACK_ENABLED`         | `false` | Persist feedback locally in DB with comment/categories modal           |
+| `message_architecture_enabled`  | `MESSAGE_ARCHITECTURE_ENABLED`   | `false` | Compute messages from pydantic_messages with stable IDs                |
 
 ## Adding a New Feature Flag
 

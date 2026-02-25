@@ -1,5 +1,7 @@
 """Models for chat conversations."""
 
+import hashlib
+import logging
 from typing import Sequence
 
 from django.contrib.auth import get_user_model
@@ -13,6 +15,8 @@ from core.models import BaseModel
 from chat.ai_sdk_types import UIMessage
 
 User = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 
 class ChatConversation(BaseModel):
@@ -80,11 +84,130 @@ class ChatConversation(BaseModel):
         "{message_id: {value: 'positive'|'negative', comment?: string}}",
     )
 
+    message_usages = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Extended usage metrics per message ID (tokens, cost, carbon, latency)",
+    )
+
+    message_sources = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Sources per message ID: "
+        "{message_id: [{sourceType, id, url, title, providerMetadata}]}",
+    )
+
+
     collection_id = models.CharField(
         blank=True,
         null=True,
         help_text="Collection ID for the conversation, used for RAG document search",
     )
+
+    def get_computed_messages(self):
+        """Compute UIMessages from pydantic_messages on the fly.
+
+        1. Parse pydantic_messages into ModelMessage objects
+        2. Convert each to UIMessage via model_message_to_ui_message
+        3. Assign stable IDs: msg-{md5(pk-index)[:8]}
+        4. Enrich with feedback, usage, and sources from normalized fields
+        """
+        from pydantic import TypeAdapter  # noqa: PLC0415
+        from pydantic_ai.messages import ModelMessage  # noqa: PLC0415
+
+        from chat.ai_sdk_types import (  # noqa: PLC0415
+            CarbonMetrics,
+            CarbonRange,
+            ExtendedUsage,
+            LanguageModelV1Source,
+            SourceUIPart,
+        )
+        from chat.clients.pydantic_ui_message_converter import (  # noqa: PLC0415
+            model_message_to_ui_message,
+        )
+
+        if not self.pydantic_messages:
+            return []
+
+        ModelMessagesTypeAdapter = TypeAdapter(list[ModelMessage])
+        try:
+            parsed_messages = ModelMessagesTypeAdapter.validate_python(
+                self.pydantic_messages
+            )
+        except Exception:
+            logger.exception(
+                "Failed to parse pydantic_messages for conversation %s",
+                self.pk,
+            )
+            return []
+
+        result = []
+        for idx, msg in enumerate(parsed_messages):
+            try:
+                ui_msg = model_message_to_ui_message(msg)
+                if ui_msg:
+                    # Generate stable ID based on conversation + index
+                    stable_id = hashlib.md5(  # noqa: S324
+                        f"{self.pk}-{idx}".encode()
+                    ).hexdigest()[:8]
+                    ui_msg.id = f"msg-{stable_id}"
+
+                    # Apply stored feedback
+                    feedback = self.message_feedbacks.get(ui_msg.id)
+                    if feedback is not None:
+                        if isinstance(feedback, dict):
+                            ui_msg.feedback = feedback.get("value")
+                        else:
+                            ui_msg.feedback = feedback
+
+                    # Apply stored usage metrics
+                    usage_data = self.message_usages.get(ui_msg.id)
+                    if usage_data:
+                        carbon = None
+                        if usage_data.get("carbon"):
+                            carbon_raw = usage_data["carbon"]
+                            carbon = CarbonMetrics(
+                                kWh=CarbonRange(**carbon_raw["kWh"])
+                                if carbon_raw.get("kWh")
+                                else None,
+                                kgCO2eq=CarbonRange(**carbon_raw["kgCO2eq"])
+                                if carbon_raw.get("kgCO2eq")
+                                else None,
+                            )
+
+                        ui_msg.usage = ExtendedUsage(
+                            prompt_tokens=usage_data.get("prompt_tokens", 0),
+                            completion_tokens=usage_data.get(
+                                "completion_tokens", 0
+                            ),
+                            cost=usage_data.get("cost"),
+                            carbon=carbon,
+                            latency_ms=usage_data.get("latency_ms"),
+                        )
+
+                    # Apply stored sources
+                    sources_data = self.message_sources.get(ui_msg.id)
+                    if sources_data:
+                        for source_item in sources_data:
+                            source_obj = SourceUIPart(
+                                type="source",
+                                source=LanguageModelV1Source(
+                                    **source_item["source"]
+                                ),
+                            )
+                            ui_msg.parts.append(source_obj)
+
+                    result.append(ui_msg)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to convert message %d in conversation %s",
+                    idx,
+                    self.pk,
+                    exc_info=True,
+                )
+                continue
+
+        return result
 
 
 class ChatConversationAttachment(BaseModel):

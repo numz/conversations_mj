@@ -24,6 +24,7 @@ export type ExtendedUsageAnnotation = ExtendedUsage & {
 };
 
 export type ChatMessage = Message & {
+  feedback?: 'positive' | 'negative' | null;
   usage?: ExtendedUsage;
   feedback?: 'positive' | 'negative' | null;
 };

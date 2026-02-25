@@ -53,6 +53,8 @@ export const Chat = ({
     [copyToClipboard],
   );
   const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
+  const messageArchitectureEnabled =
+    !!featureFlags.message_architecture_enabled;
 
   const streamProtocol = 'data'; // or 'text'
 
