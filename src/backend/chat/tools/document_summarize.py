@@ -180,7 +180,7 @@ async def document_summarize(  # pylint: disable=too-many-locals
         # Chunking strategy depends on feature flag
         chunk_size = settings.SUMMARIZATION_CHUNK_SIZE
         overlap = settings.SUMMARIZATION_OVERLAP_SIZE
-        use_improved = settings.FEATURE_FLAGS.improved_rag_tools.is_always_enabled
+        use_improved = settings.FEATURE_FLAGS.improved_summarization.is_always_enabled
 
         if use_improved:
             documents_chunks = [

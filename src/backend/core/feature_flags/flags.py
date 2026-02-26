@@ -44,7 +44,7 @@ class FeatureFlags(BaseModel):
     # features
     web_search: FeatureToggle = FeatureToggle.DISABLED
     document_upload: FeatureToggle = FeatureToggle.DISABLED
-    improved_rag_tools: FeatureToggle = FeatureToggle.DISABLED
+    improved_summarization: FeatureToggle = FeatureToggle.DISABLED
 
     def __getattr__(self, name: str):
         """Dynamically get specific RAG document search tool feature flags from settings."""
