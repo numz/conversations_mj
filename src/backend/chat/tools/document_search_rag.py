@@ -3,7 +3,9 @@
 from django.conf import settings
 from django.utils.module_loading import import_string
 
+from httpx import HTTPStatusError
 from pydantic_ai import Agent, RunContext, RunUsage
+from pydantic_ai.exceptions import ModelRetry
 from pydantic_ai.messages import ToolReturn
 
 
@@ -26,12 +28,32 @@ def add_document_rag_search_tool(agent: Agent) -> None:
 
         document_store = document_store_backend(ctx.deps.conversation.collection_id)
 
-        rag_results = document_store.search(query, session=ctx.deps.session)
+        use_improved = settings.FEATURE_FLAGS.improved_rag_tools.is_always_enabled
+
+        if use_improved:
+            try:
+                rag_results = document_store.search(query, session=ctx.deps.session)
+            except HTTPStatusError as exc:
+                raise ModelRetry(
+                    f"RAG search failed ({exc.response.status_code}). "
+                    "Retry with a different query or inform the user."
+                ) from exc
+        else:
+            rag_results = document_store.search(query, session=ctx.deps.session)
 
         ctx.usage += RunUsage(
             input_tokens=rag_results.usage.prompt_tokens,
             output_tokens=rag_results.usage.completion_tokens,
         )
+
+        if use_improved:
+            return ToolReturn(
+                return_value={
+                    str(idx): {"url": result.url, "snippets": result.content}
+                    for idx, result in enumerate(rag_results.data)
+                },
+                metadata={"sources": {result.url for result in rag_results.data}},
+            )
 
         return ToolReturn(
             return_value=rag_results.data,
