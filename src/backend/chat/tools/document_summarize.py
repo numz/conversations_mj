@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 
 from django.conf import settings
 from django.core.files.storage import default_storage
@@ -18,6 +19,9 @@ from chat.tools.utils import last_model_retry_soft_fail
 
 logger = logging.getLogger(__name__)
 
+HIERARCHICAL_MERGE_THRESHOLD = 8
+MERGE_GROUP_SIZE = 4
+
 
 @sync_to_async
 def read_document_content(doc):
@@ -26,11 +30,13 @@ def read_document_content(doc):
         return doc.file_name, f.read().decode("utf-8")
 
 
-async def summarize_chunk(idx, chunk, total_chunks, summarization_agent, ctx):
+async def summarize_chunk(idx, chunk, total_chunks, doc_name, summarization_agent, ctx):
     """Summarize a single chunk of text."""
     sum_prompt = (
+        f"Document: {doc_name}\n"
         "You are an agent specializing in text summarization. "
         "Generate a clear and concise summary of the following passage "
+        "without answering any question in the summary "
         f"(part {idx}/{total_chunks}):\n'''\n{chunk}\n'''\n\n"
     )
 
@@ -48,6 +54,84 @@ async def summarize_chunk(idx, chunk, total_chunks, summarization_agent, ctx):
 
     logger.debug("[summarize] CHUNK %s/%s response<= %s", idx, total_chunks, resp.output or "")
     return resp.output or ""
+
+
+def structure_aware_chunks(text: str, chunk_size: int, overlap: float) -> list[str]:
+    """Split text respecting markdown structure, then apply semchunk on oversized sections."""
+    header_pattern = re.compile(r'^(#{1,3})\s+.+$', re.MULTILINE)
+    sections = []
+    last_end = 0
+    current_header = ""
+
+    for match in header_pattern.finditer(text):
+        if last_end < match.start():
+            section_text = text[last_end:match.start()].strip()
+            if section_text:
+                sections.append((current_header, section_text))
+        current_header = match.group(0)
+        last_end = match.end()
+
+    # Last section
+    remaining = text[last_end:].strip()
+    if remaining:
+        sections.append((current_header, remaining))
+
+    if not sections:
+        sections = [("", text)]
+
+    # Regroup small sections, split oversized ones
+    chunker = semchunk.chunkerify(
+        tokenizer_or_token_counter=lambda t: len(t.split()),
+        chunk_size=chunk_size,
+    )
+
+    result_chunks = []
+    buffer = ""
+    for header, content in sections:
+        section_text = f"{header}\n{content}" if header else content
+        combined = f"{buffer}\n\n{section_text}".strip() if buffer else section_text
+
+        if len(combined.split()) <= chunk_size:
+            buffer = combined
+        else:
+            if buffer:
+                result_chunks.append(buffer)
+            if len(section_text.split()) > chunk_size:
+                sub_chunks = chunker(section_text, overlap=overlap)
+                result_chunks.extend(sub_chunks)
+                buffer = ""
+            else:
+                buffer = section_text
+
+    if buffer:
+        result_chunks.append(buffer)
+
+    return result_chunks if result_chunks else [text]
+
+
+async def hierarchical_merge(summaries, doc_name, instructions_hint, agent, ctx):
+    """Merge summaries hierarchically for large documents."""
+    if len(summaries) <= HIERARCHICAL_MERGE_THRESHOLD:
+        return summaries
+
+    # Group summaries
+    groups = [summaries[i:i + MERGE_GROUP_SIZE] for i in range(0, len(summaries), MERGE_GROUP_SIZE)]
+
+    sub_merged = []
+    for group_idx, group in enumerate(groups, 1):
+        sub_prompt = (
+            f"Produce a coherent synthesis of these summaries "
+            f"(group {group_idx}/{len(groups)} from '{doc_name}').\n\n"
+            f"'''\n{'\\n\\n'.join(group)}\n'''\n\n"
+            "Constraints:\n"
+            "- Summarize without repetition.\n"
+            "- Preserve all key information.\n"
+            "Respond directly with the synthesis."
+        )
+        resp = await agent.run(sub_prompt, usage=ctx.usage)
+        sub_merged.append(resp.output or "")
+
+    return sub_merged
 
 
 @last_model_retry_soft_fail
@@ -93,16 +177,25 @@ async def document_summarize(  # pylint: disable=too-many-locals
 
         documents = [await read_document_content(doc) for doc in text_attachment]
 
-        # Chunk documents and summarize each chunk
+        # Chunking strategy depends on feature flag
         chunk_size = settings.SUMMARIZATION_CHUNK_SIZE
-        chunker = semchunk.chunkerify(
-            tokenizer_or_token_counter=lambda text: len(text.split()),
-            chunk_size=chunk_size,
-        )
-        documents_chunks = chunker(
-            [doc[1] for doc in documents],
-            overlap=settings.SUMMARIZATION_OVERLAP_SIZE,
-        )
+        overlap = settings.SUMMARIZATION_OVERLAP_SIZE
+        use_improved = settings.FEATURE_FLAGS.improved_rag_tools.is_always_enabled
+
+        if use_improved:
+            documents_chunks = [
+                structure_aware_chunks(doc_content, chunk_size, overlap)
+                for _doc_name, doc_content in documents
+            ]
+        else:
+            chunker = semchunk.chunkerify(
+                tokenizer_or_token_counter=lambda text: len(text.split()),
+                chunk_size=chunk_size,
+            )
+            documents_chunks = chunker(
+                [doc[1] for doc in documents],
+                overlap=overlap,
+            )
 
         logger.info(
             "[summarize] chunking: %s parts (size~%s), instructions='%s'",
@@ -112,23 +205,43 @@ async def document_summarize(  # pylint: disable=too-many-locals
         )
 
         # Parallelize the chunk summarization with a semaphore to limit concurrent tasks
-        # because it can be very resource intensive on the LLM backend
         semaphore = asyncio.Semaphore(settings.SUMMARIZATION_CONCURRENT_REQUESTS)
-
-        async def summarize_chunk_with_semaphore(idx, chunk, total_chunks):
-            """Summarize a chunk with semaphore-controlled concurrency."""
-            async with semaphore:
-                return await summarize_chunk(idx, chunk, total_chunks, summarization_agent, ctx)
 
         doc_chunk_summaries = []
         try:
-            for doc_chunks in documents_chunks:
-                summarization_tasks = [
-                    summarize_chunk_with_semaphore(idx, chunk, len(doc_chunks))
-                    for idx, chunk in enumerate(doc_chunks, start=1)
-                ]
-                chunk_summaries = await asyncio.gather(*summarization_tasks)
-                doc_chunk_summaries.append(chunk_summaries)
+            if use_improved:
+                async def summarize_chunk_with_semaphore(idx, chunk, total_chunks, doc_name):
+                    async with semaphore:
+                        return await summarize_chunk(
+                            idx, chunk, total_chunks, doc_name, summarization_agent, ctx
+                        )
+
+                for (doc_name, _doc_content), doc_chunks in zip(
+                    documents, documents_chunks, strict=True
+                ):
+                    summarization_tasks = [
+                        summarize_chunk_with_semaphore(idx, chunk, len(doc_chunks), doc_name)
+                        for idx, chunk in enumerate(doc_chunks, start=1)
+                    ]
+                    chunk_summaries = list(await asyncio.gather(*summarization_tasks))
+                    chunk_summaries = await hierarchical_merge(
+                        chunk_summaries, doc_name, instructions_hint, summarization_agent, ctx
+                    )
+                    doc_chunk_summaries.append(chunk_summaries)
+            else:
+                async def summarize_chunk_legacy(idx, chunk, total_chunks):
+                    async with semaphore:
+                        return await summarize_chunk(
+                            idx, chunk, total_chunks, "", summarization_agent, ctx
+                        )
+
+                for doc_chunks in documents_chunks:
+                    summarization_tasks = [
+                        summarize_chunk_legacy(idx, chunk, len(doc_chunks))
+                        for idx, chunk in enumerate(doc_chunks, start=1)
+                    ]
+                    chunk_summaries = await asyncio.gather(*summarization_tasks)
+                    doc_chunk_summaries.append(chunk_summaries)
         except ModelRetry as exc:
             logger.warning("Retryable error during chunk summarization: %s", exc, exc_info=True)
             raise

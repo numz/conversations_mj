@@ -61,7 +61,7 @@ async def test_summarize_chunk_returns_summary(mocked_context):
     with summarization_agent.override(model=FunctionModel(mocked_summary)):
         chunk = "This is a test chunk of text that needs to be summarized."
 
-        result = await summarize_chunk(1, chunk, 1, summarization_agent, mocked_context)
+        result = await summarize_chunk(1, chunk, 1, "test_doc", summarization_agent, mocked_context)
 
         assert result == "This is a summary of the test chunk."
 
@@ -79,7 +79,7 @@ async def test_summarize_chunk_raises_model_retry_on_error(mocked_context):
         chunk = "This is a test chunk."
 
         with pytest.raises(ModelRetry) as exc_info:
-            await summarize_chunk(1, chunk, 1, summarization_agent, mocked_context)
+            await summarize_chunk(1, chunk, 1, "test_doc", summarization_agent, mocked_context)
 
         assert "An error occurred while summarizing a part of the document chunk" in str(
             exc_info.value
@@ -100,7 +100,7 @@ async def test_summarize_chunk_handles_empty_response(mocked_context):
 
         # Empty responses cause ModelRetry since pydantic-ai considers them invalid
         with pytest.raises(ModelRetry):
-            await summarize_chunk(1, chunk, 1, summarization_agent, mocked_context)
+            await summarize_chunk(1, chunk, 1, "test_doc", summarization_agent, mocked_context)
 
 
 @pytest.mark.asyncio

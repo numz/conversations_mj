@@ -27,6 +27,7 @@ def test_defaults():
     flags = FeatureFlags()
     assert flags.web_search is FeatureToggle.DISABLED
     assert flags.document_upload is FeatureToggle.DISABLED
+    assert flags.improved_rag_tools is FeatureToggle.DISABLED
 
 
 @pytest.mark.parametrize(
@@ -76,17 +77,18 @@ def test_round_trip_serialization():
     original = FeatureFlags(
         web_search=FeatureToggle.DYNAMIC,
         document_upload=FeatureToggle.ENABLED,
+        improved_rag_tools=FeatureToggle.DISABLED,
     )
 
     raw = original.model_dump_json()
     restored = FeatureFlags.model_validate_json(raw)
     assert restored == original
-    assert raw == ('{"web_search":"dynamic","document_upload":"enabled"}')
+    assert raw == ('{"web_search":"dynamic","document_upload":"enabled","improved_rag_tools":"disabled"}')
 
     raw_alias = original.model_dump_json(by_alias=True)
     restored_alias = FeatureFlags.model_validate_json(raw_alias)
     assert restored_alias == original
-    assert raw_alias == ('{"web-search":"dynamic","document-upload":"enabled"}')
+    assert raw_alias == ('{"web-search":"dynamic","document-upload":"enabled","improved-rag-tools":"disabled"}')
 
 
 def test_all_fields_are_feature_toggle():

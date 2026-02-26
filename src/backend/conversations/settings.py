@@ -868,12 +868,12 @@ USER QUESTION:
         environ_prefix=None,
     )
     SUMMARIZATION_CHUNK_SIZE = values.PositiveIntegerValue(
-        default=20_000,  # Approx 20k words per chunk
+        default=12_000,  # ~16K tokens, comfortable within 128K context
         environ_name="SUMMARIZATION_CHUNK_SIZE",
         environ_prefix=None,
     )
     SUMMARIZATION_OVERLAP_SIZE = values.FloatValue(
-        default=0.05,  # 5% overlap
+        default=0.10,  # 10% overlap
         environ_name="SUMMARIZATION_OVERLAP_SIZE",
         environ_prefix=None,
     )
