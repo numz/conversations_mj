@@ -24,6 +24,17 @@ from .serializers import FileUploadSerializer
 logger = logging.getLogger(__name__)
 
 
+def _truncate_filename(filename, max_length=100):
+    """Truncate a filename to max_length characters, preserving the extension."""
+    if len(filename) <= max_length:
+        return filename
+    name, dot, ext = filename.rpartition(".")
+    if dot and len(ext) <= 10:
+        available = max_length - len(ext) - 1
+        return f"{name[:available]}.{ext}"
+    return filename[:max_length]
+
+
 class AttachmentUploadThrottle(UserRateThrottle):
     """Throttle for the attachment upload endpoint."""
 
@@ -196,7 +207,9 @@ class AttachmentMixin:
         raw_name = serializer.validated_data["file_name"]
         # Strip CR/LF and normalize to a filesystem-safe basename
         safe_name = get_valid_filename(raw_name.replace("\r", "").replace("\n", "")) or "file"
+        safe_name = _truncate_filename(safe_name, max_length=100)
         ascii_name = safe_name.encode("ascii", "ignore").decode("ascii") or "file"
+        ascii_name = _truncate_filename(ascii_name, max_length=100)
         # RFC 5987 filename* for non-ASCII
         disp_filename = f'filename="{ascii_name}"'
         disp_filename_star = f"filename*=UTF-8''{quote(safe_name)}"
