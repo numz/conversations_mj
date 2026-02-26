@@ -3,11 +3,14 @@ import rehypeShikiFromHighlighter from '@shikijs/rehype/core';
 import React, { use } from 'react';
 import { Components, MarkdownHooks } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
 import { Text } from '@/components';
 import { CodeBlock } from '@/features/chat/components/CodeBlock';
+import { TableWithExport } from '@/features/chat/components/TableWithExport';
 
 // Memoized markdown plugins - created once at module level
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,9 +21,14 @@ import { getHighlighter } from '../utils/shiki';
 
 const highlighterPromise = getHighlighter();
 
+// Order matters: rehypeRaw parses HTML in markdown (e.g. <br>),
+// rehypeSanitize strips dangerous HTML, then KaTeX and Shiki
+// run after sanitization so their output is preserved.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rehypePluginsPromise: Promise<any[]> = highlighterPromise.then(
   (highlighter) => [
+    rehypeRaw,
+    rehypeSanitize,
     rehypeKatex,
     [
       rehypeShikiFromHighlighter,
@@ -57,6 +65,10 @@ const MARKDOWN_COMPONENTS: Components = {
     children,
     ...props
   }) => <CodeBlock {...props}>{children}</CodeBlock>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  table: ({ node, children, ...props }) => (
+    <TableWithExport {...props}>{children}</TableWithExport>
+  ),
 };
 
 export const CompletedMarkdownBlock = React.memo(
