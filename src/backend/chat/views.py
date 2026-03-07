@@ -285,20 +285,18 @@ class ChatViewSet(  # pylint: disable=too-many-ancestors, abstract-method
     def post_score_message(self, request, pk):  # pylint: disable=unused-argument
         """Handle POST requests to score a message in the chat conversation.
 
-        This sends the score to Langfuse to the trace_id, which is extracted from the message_id.
-        We enforce the unique score_id to be a combination of trace_id and user_id to avoid
-        multiple scores from the same user for the same message (if the user changes the score
-        it will be updated in Langfuse).
+        Persists the feedback locally in the database and optionally sends it to Langfuse.
 
         Args:
             request: The HTTP request object containing:
                 - message_id: The ID of the message to score.
-                - score: The score to assign to the message (e.g., 1-5).
+                - value: The feedback value ('positive' or 'negative').
+                - comment: Optional feedback comment.
             pk: The primary key of the chat conversation.
         Returns:
             Response: A response indicating that the message has been scored.
         """
-        _conversation = self.get_object()  # only to check permissions
+        conversation = self.get_object()
 
         serializer = serializers.ChatMessageCategoricalScoreSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -307,17 +305,41 @@ class ChatViewSet(  # pylint: disable=too-many-ancestors, abstract-method
         name = serializer.validated_data["name"]
         value = serializer.validated_data["value"]
 
-        if not message_id.startswith("trace-"):
-            raise ValidationError("Invalid message_id, no trace attached.")
+        if settings.LOCAL_FEEDBACK_ENABLED:
+            # Local feedback: persist in database + optional Langfuse
+            comment = serializer.validated_data.get("comment", "")
+            feedback_data = {"value": value}
+            if comment:
+                feedback_data["comment"] = comment
+            conversation.message_feedbacks[message_id] = feedback_data
+            conversation.save(update_fields=["message_feedbacks"])
+            logger.info("Feedback '%s' saved for message %s in DB", value, message_id)
 
-        trace_id = message_id[len("trace-") :]
-        langfuse.get_client().create_score(
-            name=name,
-            value=value,
-            trace_id=trace_id,
-            score_id=f"{trace_id}-{self.request.user.pk}",
-            data_type="CATEGORICAL",
-        )
+            if message_id.startswith("trace-"):
+                trace_id = message_id[len("trace-"):]
+                try:
+                    langfuse.get_client().create_score(
+                        name=name,
+                        value=value,
+                        trace_id=trace_id,
+                        score_id=f"{trace_id}-{self.request.user.pk}",
+                        data_type="CATEGORICAL",
+                    )
+                except (ConnectionError, ValueError, RuntimeError) as e:
+                    logger.error("Failed to send score to Langfuse: %s", e)
+        else:
+            # Original behavior: Langfuse only, trace- prefix required
+            if not message_id.startswith("trace-"):
+                raise ValidationError("Invalid message_id, no trace attached.")
+
+            trace_id = message_id[len("trace-"):]
+            langfuse.get_client().create_score(
+                name=name,
+                value=value,
+                trace_id=trace_id,
+                score_id=f"{trace_id}-{self.request.user.pk}",
+                data_type="CATEGORICAL",
+            )
 
         return Response({"status": "OK"}, status=status.HTTP_200_OK)
 

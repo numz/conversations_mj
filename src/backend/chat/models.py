@@ -91,6 +91,13 @@ class ChatConversation(BaseModel):
         "{message_id: {promptTokens, completionTokens, ...}}",
     )
 
+    message_feedbacks = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="User feedback per message ID: "
+        "{message_id: {value: 'positive'|'negative', comment?: string}}",
+    )
+
     collection_id = models.CharField(
         blank=True,
         null=True,
@@ -160,6 +167,11 @@ class ChatConversation(BaseModel):
                         from chat.ai_sdk_types import ExtendedUsage  # noqa: PLC0415
 
                         ui_msg.usage = ExtendedUsage(**usage_data)
+
+                    # Apply stored feedback
+                    feedback_data = self.message_feedbacks.get(ui_msg.id)
+                    if feedback_data:
+                        ui_msg.feedback = feedback_data.get("value")
 
                     result.append(ui_msg)
             except Exception:  # noqa: BLE001

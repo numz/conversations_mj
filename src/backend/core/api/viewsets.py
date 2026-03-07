@@ -235,6 +235,7 @@ class ConfigView(drf.views.APIView):
             "rich_clipboard_enabled": settings.RICH_CLIPBOARD_ENABLED,
             "message_architecture_enabled": settings.MESSAGE_ARCHITECTURE_ENABLED,
             "extended_metrics_enabled": getattr(settings, "EXTENDED_METRICS_ENABLED", False),
+            "local_feedback_enabled": getattr(settings, "LOCAL_FEEDBACK_ENABLED", False),
         }
 
         # Tool display names for human-readable tool labels

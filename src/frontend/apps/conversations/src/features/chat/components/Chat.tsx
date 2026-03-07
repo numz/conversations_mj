@@ -45,6 +45,7 @@ export const Chat = ({
   const { t } = useTranslation();
   const { isMobile } = useResponsiveStore();
   const featureFlags = useFeatureFlags();
+  const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
   const copyToClipboard = useClipboard(featureFlags.rich_clipboard_enabled);
   const handleCopy = useCallback(
     (content: string) => {
@@ -305,6 +306,15 @@ export const Chat = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
+  const handleFeedbackUpdate = useCallback(
+    (messageId: string, feedback: 'positive' | 'negative' | null) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? { ...msg, feedback } : msg)),
+      );
+    },
+    [setMessages],
+  );
+
   const openSources = useCallback((messageId: string) => {
     // Source-parts guard is handled at the call site (MessageItem only shows the button when sourceParts.length > 0),
     // so we just toggle it here.
@@ -500,7 +510,17 @@ export const Chat = ({
             id: initialConversationId,
           });
           if (!ignore) {
-            setInitialConversationMessages(conversation.messages);
+            if (localFeedbackEnabled) {
+              // Inject persisted feedback into messages
+              const feedbacks = conversation.message_feedbacks || {};
+              const messagesWithFeedback = conversation.messages.map((msg) => ({
+                ...msg,
+                feedback: feedbacks[msg.id]?.value || null,
+              }));
+              setInitialConversationMessages(messagesWithFeedback);
+            } else {
+              setInitialConversationMessages(conversation.messages);
+            }
             setHasInitialized(true);
           }
         } catch {
@@ -526,6 +546,7 @@ export const Chat = ({
     pendingInput,
     router,
     featureFlags.conversation_error_redirect_enabled,
+    localFeedbackEnabled,
   ]);
 
   useEffect(() => {
@@ -701,6 +722,7 @@ export const Chat = ({
                 onCopyToClipboard={handleCopy}
                 onOpenSources={openSources}
                 getMetadata={getMetadata}
+                onFeedbackUpdate={handleFeedbackUpdate}
               />
             ))}
           </Box>

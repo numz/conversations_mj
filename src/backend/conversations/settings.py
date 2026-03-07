@@ -1012,6 +1012,13 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
+    # Local feedback persistence (store feedback in DB instead of Langfuse only)
+    LOCAL_FEEDBACK_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="LOCAL_FEEDBACK_ENABLED",
+        environ_prefix=None,
+    )
+
     # Feature: Document Tools (list, get content, analyze)
     DOCUMENT_TOOLS_ENABLED = values.BooleanValue(
         default=True, environ_name="DOCUMENT_TOOLS_ENABLED", environ_prefix=None,

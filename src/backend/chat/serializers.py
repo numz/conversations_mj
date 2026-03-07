@@ -21,18 +21,18 @@ class ChatConversationSerializer(serializers.ModelSerializer):
     """Serializer for chat conversations."""
 
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    messages = serializers.SerializerMethodField()
+    messages = SchemaField(schema=list[UIMessage], read_only=True)
 
     class Meta:  # pylint: disable=missing-class-docstring
         model = models.ChatConversation
-        fields = ["id", "title", "created_at", "updated_at", "messages", "owner"]
-        read_only_fields = ["id", "created_at", "updated_at", "messages"]
-
-    def get_messages(self, obj):
-        """Return messages: computed or stored, depending on feature flag."""
-        if settings.MESSAGE_ARCHITECTURE_ENABLED:
-            return [msg.model_dump(mode="json") for msg in obj.get_computed_messages()]
-        return [msg.model_dump(mode="json") for msg in (obj.messages or [])]
+        fields = [
+            "id", "title", "created_at", "updated_at",
+            "messages", "message_feedbacks", "owner",
+        ]
+        read_only_fields = [
+            "id", "created_at", "updated_at",
+            "messages", "message_feedbacks",
+        ]
 
     def update(self, instance, validated_data):
         # If title is being changed, mark it as user-set
@@ -154,6 +154,18 @@ class ChatMessageCategoricalScoreSerializer(serializers.Serializer):  # pylint: 
     value = serializers.ChoiceField(
         choices=["positive", "negative"],
         help_text="Sentiment of the score.",
+    )
+    comment = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=1000,
+        help_text="Optional feedback comment (for negative feedback).",
+    )
+    categories = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        required=False,
+        default=list,
+        help_text="List of feedback categories.",
     )
 
 
