@@ -63,7 +63,7 @@ _all_modules = {
     "weather": lambda: __import__("tools.weather", fromlist=["register"]).register(mcp),
     "web_search": lambda: __import__("tools.web_search", fromlist=["register"]).register(mcp),
     "documents": lambda: __import__("tools.documents", fromlist=["register"]).register(mcp),
-    "legifrance": lambda: __import__("tools.legifrance", fromlist=["register"]).register(mcp),
+    "legifrance": lambda: __import__("tools.legifrance_mcp", fromlist=["register"]).register(mcp),
 }
 
 for name, register_fn in _all_modules.items():
