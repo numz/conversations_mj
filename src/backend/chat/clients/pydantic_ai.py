@@ -75,6 +75,7 @@ and raises `StreamCancelException` to abort the generator.
 import asyncio
 import dataclasses
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -244,6 +245,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         self._is_document_upload_enabled = is_feature_enabled(self.user, "document_upload")
         self._is_web_search_enabled = is_feature_enabled(self.user, "web_search")
         self._fake_streaming_delay = settings.FAKE_STREAMING_DELAY
+        self._message_architecture_enabled = settings.MESSAGE_ARCHITECTURE_ENABLED
 
         self._context_deps = ContextDeps(
             conversation=conversation,
@@ -935,7 +937,12 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         generated_title = None
 
         # Auto-generate title after N user messages if not manually set
-        user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
+        if self._message_architecture_enabled:
+            user_messages_count = sum(
+                1 for msg in self.conversation.get_computed_messages() if msg.role == "user"
+            )
+        else:
+            user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
 
         should_generate_title = (
             user_messages_count == settings.AUTO_TITLE_AFTER_USER_MESSAGES
@@ -1121,6 +1128,20 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         logger.debug("final_output_json: %s", final_output_json)
         self.conversation.pydantic_messages += final_output_json
 
+        # New architecture: compute stable ID, store sources in normalized field
+        if self._message_architecture_enabled and final_output_json:
+            assistant_msg_idx = len(self.conversation.pydantic_messages) - 1
+            stable_id = hashlib.md5(  # noqa: S324
+                f"{self.conversation.pk}-{assistant_msg_idx}".encode()
+            ).hexdigest()[:8]
+            stable_message_id = f"msg-{stable_id}"
+
+            # Store sources per message
+            if ui_sources:
+                self.conversation.message_sources[stable_message_id] = [
+                    source.model_dump(mode="json") for source in ui_sources
+                ]
+
     async def _generate_title(self) -> str | None:
         """Generate a title for the conversation using LLM based on first messages."""
 
@@ -1128,9 +1149,13 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         # Note: We intentionally use only msg.content for title generation.
         # Parts containing tool invocations or reasoning are excluded as they
         # don't contribute to a meaningful context here
+        if self._message_architecture_enabled:
+            msgs = self.conversation.get_computed_messages()
+        else:
+            msgs = self.conversation.messages
         context = "\n".join(
             f"{msg.role}: {(msg.content or '')[:300]}"  # Limit content length per message
-            for msg in self.conversation.messages
+            for msg in msgs
             if msg.content
         )
 

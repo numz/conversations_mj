@@ -1147,6 +1147,15 @@ USER QUESTION:
                 return self._PROMPT_SUGGESTIONS_DEFAULT
         return self._PROMPT_SUGGESTIONS_DEFAULT
 
+    # Message Architecture Overhaul (Feature 22)
+    # When enabled, messages are computed from pydantic_messages with stable IDs,
+    # and usage/sources are stored in normalized JSONFields.
+    MESSAGE_ARCHITECTURE_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="MESSAGE_ARCHITECTURE_ENABLED",
+        environ_prefix=None,
+    )
+
     # pylint: disable=invalid-name
     @property
     def ENVIRONMENT(self):
