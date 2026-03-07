@@ -2,6 +2,7 @@
 
 import asyncio
 import dataclasses
+import fnmatch
 import logging
 
 from django.conf import settings
@@ -15,6 +16,24 @@ from core.enums import get_language_name
 from .base import BaseAgent
 
 logger = logging.getLogger(__name__)
+
+
+def _match_tool_pattern(pattern: str, tool_names: list[str]) -> bool:
+    """
+    Check if a pattern matches any of the tool names.
+
+    Supports:
+    - Exact match: "legifrance_search" matches only "legifrance_search"
+    - Wildcard: "legifrance_*" matches all tools starting with "legifrance_"
+    - Special "_default": always matches if there are any tools
+    """
+    if pattern == "_default":
+        return bool(tool_names)
+
+    for tool_name in tool_names:
+        if fnmatch.fnmatch(tool_name, pattern):
+            return True
+    return False
 
 MOCKED_RESPONSE = """
 # **Ode to the AI Assistant** 🤖✨
@@ -116,6 +135,41 @@ class ConversationAgent(BaseAgent):
         def enforce_response_language() -> str:
             """Dynamic instruction function to set the expected language to use."""
             return f"Answer in {get_language_name(language).lower()}." if language else ""
+
+        self._add_tool_instructions()
+
+    def _add_tool_instructions(self) -> None:
+        """
+        Add tool-specific system prompts based on configuration.
+
+        Reads `tool_instructions` from the model configuration and adds
+        matching instructions as system prompts. Supports pattern matching:
+        - "_default": Added when any tools are configured
+        - "tool_name_*": Wildcard matching (e.g., "legifrance_*")
+        - "exact_name": Exact tool name matching
+        """
+        tool_instructions = self.configuration.tool_instructions
+        if not tool_instructions:
+            return
+
+        tool_names = self.configuration.tools or []
+
+        for pattern, instruction in tool_instructions.items():
+            if _match_tool_pattern(pattern, tool_names):
+                # Create a closure to capture the instruction value
+                def make_instruction_prompt(instr: str):
+                    @self.system_prompt
+                    def tool_instruction() -> str:
+                        return instr
+                    return tool_instruction
+
+                make_instruction_prompt(instruction)
+                logger.info(
+                    "Added tool instruction for pattern '%s' to model '%s': %s...",
+                    pattern,
+                    self.configuration.hrid,
+                    instruction[:80],
+                )
 
     def get_web_search_tool_name(self) -> str | None:
         """
