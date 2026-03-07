@@ -131,6 +131,8 @@ These are the environment variables you can set for the `conversations-backend` 
 | LEGIFRANCE_TOOLS                                | JSON array of enabled Legifrance tool names. Judilibre tools excluded by default                                                  | (all legifrance_* tools)                                |
 | TOOL_NAME_SANITIZE_ENABLED                      | Enable sanitization of hallucinated tool names (removes `<\|channel\|>`, `<\|start\|>` tokens)                                    | false                                                   |
 | VLLM_THINKING_DEDUP_ENABLED                     | Enable deduplication of reasoning content duplicated by vLLM                                                                      | false                                                   |
+| S3_HCP_ENABLED                                  | Enable HCP S3 compatibility mode (presigned URLs, custom headers)                                                                 | false                                                   |
+| AWS_S3_VERIFY                                   | Enable SSL certificate verification for S3 connections. Set to `false` for self-signed certificates (e.g. HCP)                    | true                                                    |
 
 
 ## conversations-frontend image
