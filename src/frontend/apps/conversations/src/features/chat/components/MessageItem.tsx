@@ -1,5 +1,5 @@
 import { Message, SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Icon, Loader, Text } from '@/components';
@@ -11,6 +11,8 @@ import {
 } from '@/features/chat/components/MessageBlock';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
+import { UsageMetrics } from '@/features/chat/components/UsageMetrics';
+import { ExtendedUsage } from '@/features/chat/types';
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
@@ -157,6 +159,7 @@ interface SourceMetadata {
 
 export interface MessageItemProps {
   message: Message;
+  usage?: ExtendedUsage;
   isLastMessage: boolean;
   isLastAssistantMessage: boolean;
   isFirstConversationMessage: boolean;
@@ -172,6 +175,7 @@ export interface MessageItemProps {
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
   message,
+  usage,
   isLastMessage,
   isLastAssistantMessage,
   isFirstConversationMessage,
@@ -238,6 +242,15 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     }
     return splitStreamingContent(message.content);
   }, [isCurrentlyStreaming, message.content]);
+
+  // Usage display: streaming usage (from Map) takes precedence over stored
+  const displayUsage = useMemo(() => {
+    const storedUsage =
+      'usage' in message
+        ? (message as unknown as { usage?: ExtendedUsage }).usage
+        : undefined;
+    return usage ?? storedUsage;
+  }, [usage, message]);
 
   const handleCopy = React.useCallback(() => {
     onCopyToClipboard(message.content);
@@ -389,7 +402,12 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 $gap="6px"
                 $margin={{ top: 'base' }}
               >
-                <Box $direction="row" $gap="4px">
+                <Box
+                  $direction="row"
+                  $gap="4px"
+                  $align="center"
+                  $css="flex-wrap: nowrap;"
+                >
                   <Box
                     $direction="row"
                     $align="center"
@@ -442,6 +460,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                       </Text>
                     </Box>
                   )}
+                  {displayUsage && <UsageMetrics usage={displayUsage} />}
                 </Box>
                 <Box $direction="row" $gap="4px">
                   {conversationId &&
@@ -494,6 +513,18 @@ const arePropsEqual = (
   const prevPartsLength = prevProps.message.parts?.length ?? 0;
   const nextPartsLength = nextProps.message.parts?.length ?? 0;
   if (prevPartsLength !== nextPartsLength) {
+    return false;
+  }
+
+  // Check usage prop (for extended metrics)
+  if (prevProps.usage !== nextProps.usage) {
+    return false;
+  }
+
+  // Check annotations
+  const prevAnnotationsLength = prevProps.message.annotations?.length ?? 0;
+  const nextAnnotationsLength = nextProps.message.annotations?.length ?? 0;
+  if (prevAnnotationsLength !== nextAnnotationsLength) {
     return false;
   }
 

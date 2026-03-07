@@ -1,7 +1,10 @@
 """Base module for PydanticAI agents."""
 
 import dataclasses
+import json
 import logging
+from contextvars import ContextVar
+from typing import Any, AsyncIterator, Optional
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -14,6 +17,154 @@ from pydantic_ai.profiles import ModelProfile
 from chat.tools import get_pydantic_tools_by_name
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Extended Metrics — capture usage data from LLM SSE responses
+# ---------------------------------------------------------------------------
+
+
+class ExtendedMetrics:
+    """Dynamic container for extended metrics captured from LLM responses."""
+
+    def __init__(self):
+        self._data: dict[str, Any] = {}
+
+    def set(self, name: str, value: Any) -> None:
+        self._data[name] = value
+
+    def get(self, name: str, default: Any = None) -> Any:
+        return self._data.get(name, default)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return self._data.get(name)
+
+    def __repr__(self) -> str:
+        return f"ExtendedMetrics({self._data})"
+
+    def has_metrics(self) -> bool:
+        return bool(self._data)
+
+    def to_dict(self) -> dict[str, Any]:
+        return self._data.copy()
+
+
+_current_metrics: ContextVar[Optional[ExtendedMetrics]] = ContextVar(
+    "extended_metrics", default=None
+)
+
+
+def get_current_metrics() -> Optional[ExtendedMetrics]:
+    return _current_metrics.get()
+
+
+def clear_current_metrics() -> None:
+    _current_metrics.set(None)
+
+
+def _get_nested_value(data: dict, path: str) -> Any:
+    """Extract a value from a nested dict using dot notation (e.g. 'carbon.kWh.min')."""
+    keys = path.split(".")
+    current = data
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+    return current
+
+
+def set_metrics_from_usage(usage_data: dict) -> None:
+    """Set extended metrics from a usage dict based on EXTENDED_METRICS_MAPPING."""
+    if not usage_data:
+        return
+    if not getattr(settings, "EXTENDED_METRICS_ENABLED", False):
+        return
+
+    mapping = getattr(settings, "EXTENDED_METRICS_MAPPING", {})
+    if not mapping:
+        return
+
+    metrics = ExtendedMetrics()
+    for metric_name, json_path in mapping.items():
+        value = _get_nested_value(usage_data, json_path)
+        if value is not None:
+            metrics.set(metric_name, value)
+
+    if metrics.has_metrics():
+        _current_metrics.set(metrics)
+        logger.info("Extended metrics captured: %s", metrics)
+
+
+class SSEInterceptorStream(httpx.AsyncByteStream):
+    """Wraps an async byte stream to intercept SSE chunks and capture usage metrics."""
+
+    def __init__(self, original_stream: httpx.AsyncByteStream):
+        self._original_stream = original_stream
+        self._buffer = b""
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        async for chunk in self._original_stream:
+            self._buffer += chunk
+            yield chunk
+            self._process_buffer()
+
+    async def aclose(self) -> None:
+        await self._original_stream.aclose()
+
+    def _process_buffer(self) -> None:
+        while b"\n\n" in self._buffer or b"\r\n\r\n" in self._buffer:
+            sep = b"\n\n" if b"\n\n" in self._buffer else b"\r\n\r\n"
+            event_end = self._buffer.find(sep)
+            if event_end == -1:
+                break
+            event_data = self._buffer[:event_end]
+            self._buffer = self._buffer[event_end + len(sep):]
+            self._parse_sse_event(event_data)
+
+    def _parse_sse_event(self, event_data: bytes) -> None:
+        try:
+            text = event_data.decode("utf-8")
+            for line in text.split("\n"):
+                if line.startswith("data: "):
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        continue
+                    try:
+                        data = json.loads(data_str)
+                        if "usage" in data and data["usage"]:
+                            usage = data["usage"]
+                            mapping = getattr(settings, "EXTENDED_METRICS_MAPPING", {})
+                            root_keys = {path.split(".")[0] for path in mapping.values()}
+                            if any(key in usage for key in root_keys):
+                                set_metrics_from_usage(usage)
+                    except json.JSONDecodeError:
+                        pass
+        except Exception as e:  # pylint: disable=broad-except
+            logger.debug("Error parsing SSE event: %s", e)
+
+
+class SSEMetricsInterceptor(httpx.AsyncBaseTransport):
+    """Async transport wrapper that intercepts SSE responses to capture usage metrics."""
+
+    def __init__(self, transport: httpx.AsyncBaseTransport):
+        self._transport = transport
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        response = await self._transport.handle_async_request(request)
+        if b"chat/completions" in request.url.raw_path:
+            response.stream = SSEInterceptorStream(response.stream)
+        return response
+
+
+def create_opengatellm_http_client() -> httpx.AsyncClient:
+    """Create an httpx AsyncClient with SSE metrics interception for OpenGateLLM."""
+    return httpx.AsyncClient(
+        transport=SSEMetricsInterceptor(httpx.AsyncHTTPTransport()),
+        timeout=httpx.Timeout(timeout=600, connect=5),
+        headers={"User-Agent": get_user_agent()},
+    )
 
 
 def prepare_custom_model(configuration: "chat.llm_configuration.LLModel"):
@@ -136,6 +287,7 @@ def prepare_custom_model(configuration: "chat.llm_configuration.LLModel"):
                 provider=OpenAIProvider(
                     base_url=configuration.provider.base_url,
                     api_key=configuration.provider.api_key,
+                    http_client=create_opengatellm_http_client(),
                 ),
             )
         case _:

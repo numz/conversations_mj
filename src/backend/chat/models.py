@@ -84,6 +84,13 @@ class ChatConversation(BaseModel):
         "{message_id: [{sourceType, id, url, title, providerMetadata}]}",
     )
 
+    message_usages = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Usage metrics per message ID: "
+        "{message_id: {promptTokens, completionTokens, ...}}",
+    )
+
     collection_id = models.CharField(
         blank=True,
         null=True,
@@ -146,6 +153,13 @@ class ChatConversation(BaseModel):
                                 ),
                             )
                             ui_msg.parts.append(source_obj)
+
+                    # Apply stored usage metrics
+                    usage_data = self.message_usages.get(ui_msg.id)
+                    if usage_data:
+                        from chat.ai_sdk_types import ExtendedUsage  # noqa: PLC0415
+
+                        ui_msg.usage = ExtendedUsage(**usage_data)
 
                     result.append(ui_msg)
             except Exception:  # noqa: BLE001
