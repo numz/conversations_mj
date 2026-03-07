@@ -1169,12 +1169,6 @@ USER QUESTION:
         environ_name="VLLM_THINKING_DEDUP_ENABLED",
         environ_prefix=None,
     )
-
-    FILTER_THINKING_PARTS_ENABLED = values.BooleanValue(
-        True,
-        environ_name="FILTER_THINKING_PARTS_ENABLED",
-        environ_prefix=None,
-    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,

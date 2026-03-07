@@ -133,8 +133,6 @@ from chat.agents.base import (
 )
 from chat.agents.conversation import ConversationAgent, TitleGenerationAgent
 from chat.agents.local_media_url_processors import (
-    filter_internal_context,
-    filter_thinking_parts,
     update_history_local_urls,
     update_local_urls,
 )
@@ -1344,14 +1342,8 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 _output_ui_message.usage.model_dump() if _output_ui_message.usage else {}
             )
 
-        # Filter out ThinkingPart and internal context before storing
-        output_to_store = final_output
-        if settings.FILTER_THINKING_PARTS_ENABLED:
-            output_to_store = filter_thinking_parts(output_to_store)
-            output_to_store = filter_internal_context(output_to_store)
-
         final_output_json = json.loads(
-            ModelMessagesTypeAdapter.dump_json(output_to_store).decode("utf-8")
+            ModelMessagesTypeAdapter.dump_json(final_output).decode("utf-8")
         )
         logger.debug("final_output_json: %s", final_output_json)
         self.conversation.pydantic_messages += final_output_json

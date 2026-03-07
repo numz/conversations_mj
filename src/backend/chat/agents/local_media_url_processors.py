@@ -9,7 +9,6 @@ storing the messages in the database.
 import base64
 import logging
 import mimetypes
-import re
 import secrets
 from typing import Dict, Iterable
 
@@ -17,8 +16,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 
-from pydantic_ai import DocumentUrl, ImageUrl, ModelMessage, ModelRequest, ModelResponse, UserPromptPart
-from pydantic_ai.messages import ThinkingPart
+from pydantic_ai import DocumentUrl, ImageUrl, ModelMessage, ModelRequest, UserPromptPart
 
 from core.file_upload.enums import FileToLLMMode
 from core.file_upload.utils import generate_retrieve_policy
@@ -187,90 +185,3 @@ def update_history_local_urls(
             update_local_urls(conversation, part.content)
 
     return messages
-
-
-def filter_thinking_parts(messages: list[ModelMessage]) -> list[ModelMessage]:
-    """
-    Remove ThinkingPart from ModelResponse messages to reduce context size.
-
-    ThinkingPart contains the model's internal reasoning which is not needed
-    for subsequent requests and can significantly increase context size.
-    """
-    filtered_messages = []
-
-    for message in messages:
-        if isinstance(message, ModelResponse):
-            filtered_parts = [
-                part for part in message.parts
-                if not isinstance(part, ThinkingPart)
-            ]
-            if filtered_parts:
-                filtered_messages.append(
-                    ModelResponse(
-                        parts=filtered_parts,
-                        model_name=message.model_name,
-                        timestamp=message.timestamp,
-                    )
-                )
-        else:
-            filtered_messages.append(message)
-
-    return filtered_messages
-
-
-def filter_internal_context(messages: list[ModelMessage]) -> list[ModelMessage]:
-    """
-    Remove [Internal context] annotations from UserPromptPart content before storing.
-
-    These annotations are added for the LLM but should not be displayed to users.
-    """
-    internal_context_pattern = re.compile(
-        r"\n*\[Internal context\][^\[]*(?:\[/Internal context\])?",
-        re.IGNORECASE | re.DOTALL,
-    )
-
-    filtered_messages = []
-
-    for message in messages:
-        if isinstance(message, ModelRequest):
-            new_parts = []
-            for part in message.parts:
-                if isinstance(part, UserPromptPart):
-                    if isinstance(part.content, str):
-                        cleaned_content = internal_context_pattern.sub("", part.content).strip()
-                        new_parts.append(
-                            UserPromptPart(
-                                content=cleaned_content,
-                                timestamp=part.timestamp,
-                            )
-                        )
-                    elif isinstance(part.content, list):
-                        cleaned_list = []
-                        for item in part.content:
-                            if isinstance(item, str):
-                                cleaned_item = internal_context_pattern.sub("", item).strip()
-                                if cleaned_item:
-                                    cleaned_list.append(cleaned_item)
-                            else:
-                                cleaned_list.append(item)
-                        new_parts.append(
-                            UserPromptPart(
-                                content=cleaned_list,
-                                timestamp=part.timestamp,
-                            )
-                        )
-                    else:
-                        new_parts.append(part)
-                else:
-                    new_parts.append(part)
-
-            filtered_messages.append(
-                ModelRequest(
-                    parts=new_parts,
-                    kind=message.kind,
-                )
-            )
-        else:
-            filtered_messages.append(message)
-
-    return filtered_messages
