@@ -77,19 +77,6 @@ class ChatConversation(BaseModel):
         help_text="Agent usage for the chat conversation, provided by OpenAI API",
     )
 
-    message_feedbacks = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="User feedback per message ID: "
-        "{message_id: {value: 'positive'|'negative', comment?: string}}",
-    )
-
-    message_usages = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Extended usage metrics per message ID (tokens, cost, carbon, latency)",
-    )
-
     message_sources = models.JSONField(
         default=dict,
         blank=True,
@@ -109,17 +96,12 @@ class ChatConversation(BaseModel):
         1. Parse pydantic_messages into ModelMessage objects
         2. Convert each to UIMessage via model_message_to_ui_message
         3. Assign stable IDs: msg-{md5(pk-index)[:8]}
-        4. Enrich with feedback, usage, and sources from normalized fields
-           (conditionally based on respective feature flags)
+        4. Enrich with sources from message_sources
         """
-        from django.conf import settings  # noqa: PLC0415
         from pydantic import TypeAdapter  # noqa: PLC0415
         from pydantic_ai.messages import ModelMessage  # noqa: PLC0415
 
         from chat.ai_sdk_types import (  # noqa: PLC0415
-            CarbonMetrics,
-            CarbonRange,
-            ExtendedUsage,
             LanguageModelV1Source,
             SourceUIPart,
         )
@@ -142,13 +124,6 @@ class ChatConversation(BaseModel):
             )
             return []
 
-        extended_metrics_enabled = getattr(
-            settings, "EXTENDED_METRICS_ENABLED", False
-        )
-        local_feedback_enabled = getattr(
-            settings, "LOCAL_FEEDBACK_ENABLED", False
-        )
-
         result = []
         for idx, msg in enumerate(parsed_messages):
             try:
@@ -160,42 +135,7 @@ class ChatConversation(BaseModel):
                     ).hexdigest()[:8]
                     ui_msg.id = f"msg-{stable_id}"
 
-                    # Apply stored feedback (only if local feedback feature is ON)
-                    if local_feedback_enabled:
-                        feedback = self.message_feedbacks.get(ui_msg.id)
-                        if feedback is not None:
-                            if isinstance(feedback, dict):
-                                ui_msg.feedback = feedback.get("value")
-                            else:
-                                ui_msg.feedback = feedback
-
-                    # Apply stored usage metrics (only if extended metrics feature is ON)
-                    if extended_metrics_enabled:
-                        usage_data = self.message_usages.get(ui_msg.id)
-                        if usage_data:
-                            carbon = None
-                            if usage_data.get("carbon"):
-                                carbon_raw = usage_data["carbon"]
-                                carbon = CarbonMetrics(
-                                    kWh=CarbonRange(**carbon_raw["kWh"])
-                                    if carbon_raw.get("kWh")
-                                    else None,
-                                    kgCO2eq=CarbonRange(**carbon_raw["kgCO2eq"])
-                                    if carbon_raw.get("kgCO2eq")
-                                    else None,
-                                )
-
-                            ui_msg.usage = ExtendedUsage(
-                                prompt_tokens=usage_data.get("prompt_tokens", 0),
-                                completion_tokens=usage_data.get(
-                                    "completion_tokens", 0
-                                ),
-                                cost=usage_data.get("cost"),
-                                carbon=carbon,
-                                latency_ms=usage_data.get("latency_ms"),
-                            )
-
-                    # Apply stored sources (always, Feature 22's own data)
+                    # Apply stored sources
                     sources_data = self.message_sources.get(ui_msg.id)
                     if sources_data:
                         for source_item in sources_data:

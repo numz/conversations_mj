@@ -25,14 +25,8 @@ class ChatConversationSerializer(serializers.ModelSerializer):
 
     class Meta:  # pylint: disable=missing-class-docstring
         model = models.ChatConversation
-        fields = [
-            "id", "title", "created_at", "updated_at",
-            "messages", "message_feedbacks", "owner",
-        ]
-        read_only_fields = [
-            "id", "created_at", "updated_at",
-            "messages", "message_feedbacks",
-        ]
+        fields = ["id", "title", "created_at", "updated_at", "messages", "owner"]
+        read_only_fields = ["id", "created_at", "updated_at", "messages"]
 
     def get_messages(self, obj):
         """Return messages: computed or stored, depending on feature flag."""

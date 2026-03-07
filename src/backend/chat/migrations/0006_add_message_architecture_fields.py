@@ -12,30 +12,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="chatconversation",
-            name="message_feedbacks",
-            field=models.JSONField(
-                blank=True,
-                default=dict,
-                help_text=(
-                    "User feedback per message ID: "
-                    "{message_id: {value: 'positive'|'negative', comment?: string}}"
-                ),
-            ),
-        ),
-        migrations.AddField(
-            model_name="chatconversation",
-            name="message_usages",
-            field=models.JSONField(
-                blank=True,
-                default=dict,
-                help_text=(
-                    "Extended usage metrics per message ID "
-                    "(tokens, cost, carbon, latency)"
-                ),
-            ),
-        ),
-        migrations.AddField(
-            model_name="chatconversation",
             name="message_sources",
             field=models.JSONField(
                 blank=True,
