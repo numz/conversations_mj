@@ -75,6 +75,7 @@ and raises `StreamCancelException` to abort the generator.
 import asyncio
 import dataclasses
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -241,6 +242,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         self._is_document_upload_enabled = is_feature_enabled(self.user, "document_upload")
         self._is_web_search_enabled = is_feature_enabled(self.user, "web_search")
         self._fake_streaming_delay = settings.FAKE_STREAMING_DELAY
+        self._message_architecture_enabled = settings.MESSAGE_ARCHITECTURE_ENABLED
 
         self._context_deps = ContextDeps(
             conversation=conversation,
@@ -872,13 +874,14 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         )
         return events_v4.StartStepPart(message_id=state.model_response_message_id)
 
-    async def _finalize_conversation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    async def _finalize_conversation(  # noqa: PLR0913  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         new_messages: list,
         run_output,
         usage: Dict[str, int],
         state: StreamingState,
         image_key_mapping: Dict[str, str],
+        agent_start_time: float = 0,
     ) -> AsyncGenerator[events_v4.Event, None]:
         """
         Finalize the conversation after the agent run completes.
@@ -909,11 +912,17 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             ui_sources=state.ui_sources,
             model_response_message_id=state.model_response_message_id,
             image_key_mapping=image_key_mapping or None,
+            agent_start_time=agent_start_time,
         )
         generated_title = None
 
         # Auto-generate title after N user messages if not manually set
-        user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
+        if self._message_architecture_enabled:
+            user_messages_count = sum(
+                1 for msg in self.conversation.get_computed_messages() if msg.role == "user"
+            )
+        else:
+            user_messages_count = sum(1 for msg in self.conversation.messages if msg.role == "user")
 
         should_generate_title = (
             user_messages_count == settings.AUTO_TITLE_AFTER_USER_MESSAGES
@@ -1004,6 +1013,8 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         if await self._check_should_enable_rag(conversation_has_documents):
             self._setup_rag_tools()
 
+        _agent_start_time = time.time()
+
         async with AsyncExitStack() as stack:
             # MCP servers (if any) can be initialized here
             mcp_servers = [await stack.enter_async_context(mcp) for mcp in get_mcp_servers()]
@@ -1031,11 +1042,12 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                 usage["completionTokens"] = final_usage.output_tokens
 
         async for event in self._finalize_conversation(
-            new_messages, run_output, usage, state, image_key_mapping
+            new_messages, run_output, usage, state, image_key_mapping,
+            agent_start_time=_agent_start_time,
         ):
             yield event
 
-    def _prepare_update_conversation(
+    def _prepare_update_conversation(  # noqa: PLR0913
         self,
         *,
         final_output: List[ModelRequest | ModelMessage],
@@ -1043,6 +1055,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         ui_sources: Optional[List[SourceUIPart]] = None,
         model_response_message_id: str | None = None,
         image_key_mapping: Optional[Dict[str, str]] = None,
+        agent_start_time: float = 0,
     ):  # pylint: disable=too-many-arguments
         """
         Save everything related to the conversation.
@@ -1099,6 +1112,33 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         logger.debug("final_output_json: %s", final_output_json)
         self.conversation.pydantic_messages += final_output_json
 
+        # New architecture: compute stable ID, store sources (and usage if enabled)
+        if self._message_architecture_enabled and final_output_json:
+            assistant_msg_idx = len(self.conversation.pydantic_messages) - 1
+            stable_id = hashlib.md5(  # noqa: S324
+                f"{self.conversation.pk}-{assistant_msg_idx}".encode()
+            ).hexdigest()[:8]
+            stable_message_id = f"msg-{stable_id}"
+
+            # Store usage metrics per message (only if extended metrics is ON)
+            if getattr(settings, "EXTENDED_METRICS_ENABLED", False):
+                latency_ms = (
+                    (time.time() - agent_start_time) * 1000
+                    if agent_start_time
+                    else None
+                )
+                self.conversation.message_usages[stable_message_id] = {
+                    "prompt_tokens": usage.get("promptTokens", 0),
+                    "completion_tokens": usage.get("completionTokens", 0),
+                    "latency_ms": latency_ms,
+                }
+
+            # Store sources per message (always, Feature 22's own data)
+            if ui_sources:
+                self.conversation.message_sources[stable_message_id] = [
+                    source.model_dump(mode="json") for source in ui_sources
+                ]
+
     async def _generate_title(self) -> str | None:
         """Generate a title for the conversation using LLM based on first messages."""
 
@@ -1106,9 +1146,13 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         # Note: We intentionally use only msg.content for title generation.
         # Parts containing tool invocations or reasoning are excluded as they
         # don't contribute to a meaningful context here
+        if self._message_architecture_enabled:
+            msgs = self.conversation.get_computed_messages()
+        else:
+            msgs = self.conversation.messages
         context = "\n".join(
             f"{msg.role}: {(msg.content or '')[:300]}"  # Limit content length per message
-            for msg in self.conversation.messages
+            for msg in msgs
             if msg.content
         )
 
