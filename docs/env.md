@@ -126,6 +126,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | LEGIFRANCE_OAUTH_HOST                           | OAuth host override for Legifrance                                                                                                |                                                         |
 | LEGIFRANCE_API_HOST                             | API host override for Legifrance                                                                                                  |                                                         |
 | LEGIFRANCE_SSL_VERIFY                           | Enable SSL verification for Legifrance API calls                                                                                  | true                                                    |
+| LEGIFRANCE_TOOLS                                | JSON array of enabled Legifrance tool names. Judilibre tools excluded by default                                                  | (all legifrance_* tools)                                |
 | TOOL_NAME_SANITIZE_ENABLED                      | Enable sanitization of hallucinated tool names (removes `<\|channel\|>`, `<\|start\|>` tokens)                                    | false                                                   |
 | VLLM_THINKING_DEDUP_ENABLED                     | Enable deduplication of reasoning content duplicated by vLLM                                                                      | false                                                   |
 
