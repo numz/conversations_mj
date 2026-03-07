@@ -72,7 +72,9 @@ test.describe('Chat page', () => {
     await expect(messageContent).toBeVisible();
   });
 
-  test('the user can paste a document into the chat input', async ({ page }) => {
+  test('the user can paste a document into the chat input', async ({
+    page,
+  }) => {
     await overrideConfig(page, {
       FEATURE_FLAGS: {
         'document-upload': 'enabled',
@@ -99,7 +101,9 @@ test.describe('Chat page', () => {
         const textarea = document.querySelector(
           'textarea[name="inputchat-textarea"]',
         ) as HTMLTextAreaElement;
-        if (!textarea) return;
+        if (!textarea) {
+          return;
+        }
 
         // Create a File object
         const file = new File([content], name, { type });

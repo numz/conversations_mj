@@ -316,7 +316,7 @@ class ChatViewSet(  # pylint: disable=too-many-ancestors, abstract-method
             logger.info("Feedback '%s' saved for message %s in DB", value, message_id)
 
             if message_id.startswith("trace-"):
-                trace_id = message_id[len("trace-"):]
+                trace_id = message_id[len("trace-") :]
                 try:
                     langfuse.get_client().create_score(
                         name=name,
@@ -332,7 +332,7 @@ class ChatViewSet(  # pylint: disable=too-many-ancestors, abstract-method
             if not message_id.startswith("trace-"):
                 raise ValidationError("Invalid message_id, no trace attached.")
 
-            trace_id = message_id[len("trace-"):]
+            trace_id = message_id[len("trace-") :]
             langfuse.get_client().create_score(
                 name=name,
                 value=value,

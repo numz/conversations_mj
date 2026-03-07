@@ -1,5 +1,6 @@
 /* eslint-disable testing-library/no-unnecessary-act, @typescript-eslint/require-await */
 import { CunninghamProvider } from '@openfun/cunningham-react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
@@ -365,10 +366,15 @@ describe('MessageItem', () => {
   };
 
   const renderWithProviders = (ui: React.ReactNode) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     return render(
-      <CunninghamProvider>
-        <Suspense fallback={null}>{ui}</Suspense>
-      </CunninghamProvider>,
+      <QueryClientProvider client={queryClient}>
+        <CunninghamProvider>
+          <Suspense fallback={null}>{ui}</Suspense>
+        </CunninghamProvider>
+      </QueryClientProvider>,
     );
   };
 

@@ -120,7 +120,7 @@ class SSEInterceptorStream(httpx.AsyncByteStream):
             if event_end == -1:
                 break
             event_data = self._buffer[:event_end]
-            self._buffer = self._buffer[event_end + len(sep):]
+            self._buffer = self._buffer[event_end + len(sep) :]
             self._parse_sse_event(event_data)
 
     def _parse_sse_event(self, event_data: bytes) -> None:
@@ -141,7 +141,7 @@ class SSEInterceptorStream(httpx.AsyncByteStream):
                                 set_metrics_from_usage(usage)
                     except json.JSONDecodeError:
                         pass
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except
             logger.debug("Error parsing SSE event: %s", e)
 
 

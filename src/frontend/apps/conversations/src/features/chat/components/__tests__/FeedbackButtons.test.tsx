@@ -1,37 +1,73 @@
-import { render, screen, act } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { FeedbackButtons } from '../FeedbackButtons';
 
 const mockScoreMessage = jest.fn();
 jest.mock('@/features/chat/api/useScoreMessage', () => ({
-  scoreMessage: (...args) => mockScoreMessage(...args),
+  scoreMessage: (...args: unknown[]) => mockScoreMessage(...args),
 }));
 
 const mockShowToast = jest.fn();
 jest.mock('@/components', () => ({
-  Box: ({ children, as: Tag = 'div', ...props }) => {
-    const Element = Tag;
+  Box: ({
+    children,
+    as: Tag = 'div',
+    ...props
+  }: {
+    children: React.ReactNode;
+    as?: string;
+    [key: string]: unknown;
+  }) => {
+    const Element = Tag as React.ElementType;
     return <Element {...props}>{children}</Element>;
   },
-  Text: ({ children, ...props }) => <span {...props}>{children}</span>,
+  Text: ({
+    children,
+    ...props
+  }: {
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => <span {...props}>{children}</span>,
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    t: (key: string) => key,
   }),
 }));
 
 jest.mock('@openfun/cunningham-react', () => ({
-  Button: ({ children, onClick, icon, ...props }) => (
+  Button: ({
+    children,
+    onClick,
+    icon,
+    ...props
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    icon?: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
     <button onClick={onClick} {...props}>
       {icon}
       {children}
     </button>
   ),
-  Modal: ({ children, isOpen, title, leftActions, rightActions }) =>
+  Modal: ({
+    children,
+    isOpen,
+    title,
+    leftActions,
+    rightActions,
+  }: {
+    children: React.ReactNode;
+    isOpen: boolean;
+    title: React.ReactNode;
+    leftActions: React.ReactNode;
+    rightActions: React.ReactNode;
+  }) =>
     isOpen ? (
       <div data-testid="feedback-modal">
         <div data-testid="modal-title">{title}</div>
@@ -41,13 +77,18 @@ jest.mock('@openfun/cunningham-react', () => ({
       </div>
     ) : null,
   ModalSize: { SMALL: 'small' },
-  TextArea: ({ label, value, onChange, ...props }) => (
-    <textarea
-      aria-label={label}
-      value={value}
-      onChange={onChange}
-      {...props}
-    />
+  TextArea: ({
+    label,
+    value,
+    onChange,
+    ...props
+  }: {
+    label: string;
+    value: string;
+    onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
+    [key: string]: unknown;
+  }) => (
+    <textarea aria-label={label} value={value} onChange={onChange} {...props} />
   ),
 }));
 
@@ -174,10 +215,7 @@ describe('FeedbackButtons', () => {
     const onFeedbackUpdate = jest.fn();
     const user = userEvent.setup();
     render(
-      <FeedbackButtons
-        {...defaultProps}
-        onFeedbackUpdate={onFeedbackUpdate}
-      />,
+      <FeedbackButtons {...defaultProps} onFeedbackUpdate={onFeedbackUpdate} />,
     );
 
     await act(async () => {
@@ -202,22 +240,13 @@ describe('FeedbackButtons', () => {
   });
 
   it('initializes with initialFeedback prop', () => {
-    render(
-      <FeedbackButtons {...defaultProps} initialFeedback="positive" />,
-    );
-    // The filled thumb up SVG should be rendered (we can't easily test SVG content,
-    // but we verify no error is thrown and the component renders)
+    render(<FeedbackButtons {...defaultProps} initialFeedback="positive" />);
     expect(screen.getByLabelText('Feedback positif')).toBeTruthy();
   });
 
   it('does not send feedback when conversationId is undefined', async () => {
     const user = userEvent.setup();
-    render(
-      <FeedbackButtons
-        conversationId={undefined}
-        messageId="msg-456"
-      />,
-    );
+    render(<FeedbackButtons conversationId={undefined} messageId="msg-456" />);
 
     await act(async () => {
       await user.click(screen.getByLabelText('Feedback positif'));

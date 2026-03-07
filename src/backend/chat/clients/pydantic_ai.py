@@ -126,15 +126,15 @@ from pydantic_ai.messages import (
 from core.feature_flags.helpers import is_feature_enabled
 
 from chat import models
-from chat.agents.conversation import ConversationAgent, TitleGenerationAgent
-from chat.agents.local_media_url_processors import (
-    update_history_local_urls,
-    update_local_urls,
-)
 from chat.agents.base import (
     clear_current_metrics,
     get_current_metrics,
     set_metrics_from_usage,
+)
+from chat.agents.conversation import ConversationAgent, TitleGenerationAgent
+from chat.agents.local_media_url_processors import (
+    update_history_local_urls,
+    update_local_urls,
 )
 from chat.ai_sdk_types import (
     CarbonMetrics,
@@ -1072,7 +1072,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
 
         return extended
 
-    async def _finalize_conversation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    async def _finalize_conversation(  # noqa: PLR0913  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         new_messages: list,
         run_output,
@@ -1155,7 +1155,7 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         # Clear metrics after use
         clear_current_metrics()
 
-    async def _run_agent(  # pylint: disable=too-many-locals
+    async def _run_agent(  # noqa: PLR0912  # pylint: disable=too-many-locals
         self,
         messages: List[UIMessage],
         force_web_search: bool = False,
@@ -1244,11 +1244,16 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                     set_metrics_from_usage(_usage_details)
 
         async for event in self._finalize_conversation(
-            new_messages, run_output, usage, state, image_key_mapping, stream_start_time,
+            new_messages,
+            run_output,
+            usage,
+            state,
+            image_key_mapping,
+            stream_start_time,
         ):
             yield event
 
-    def _prepare_update_conversation(
+    def _prepare_update_conversation(  # noqa: PLR0912, PLR0913
         self,
         *,
         final_output: List[ModelRequest | ModelMessage],
