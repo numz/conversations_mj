@@ -980,6 +980,19 @@ USER QUESTION:
         environ_name="LEGIFRANCE_SSL_VERIFY",
         environ_prefix=None,
     )
+    LEGIFRANCE_TOOLS = values.ListValue(
+        default=[
+            "legifrance_search_codes_lois",
+            "legifrance_search_jurisprudence",
+            "legifrance_search_conventions",
+            "legifrance_search_admin",
+            "legifrance_get_document",
+            "legifrance_list_codes",
+            "legifrance_search_code_article_by_number",
+        ],
+        environ_name="LEGIFRANCE_TOOLS",
+        environ_prefix=None,
+    )
 
     # Logging
     # We want to make it easy to log to console but by default we log production
