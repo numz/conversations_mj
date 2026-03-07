@@ -1138,6 +1138,12 @@ USER QUESTION:
         environ_name="TOOL_NAME_SANITIZE_ENABLED",
         environ_prefix=None,
     )
+
+    VLLM_THINKING_DEDUP_ENABLED = values.BooleanValue(
+        False,
+        environ_name="VLLM_THINKING_DEDUP_ENABLED",
+        environ_prefix=None,
+    )
     # WARNING: Testing purpose only. Do not use in production.
     WARNING_MOCK_CONVERSATION_AGENT = values.BooleanValue(
         default=False,
