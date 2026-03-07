@@ -835,11 +835,17 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                         if event.result.metadata and (
                             sources := event.result.metadata.get("sources")
                         ):
-                            for source_url in sources:
+                            # sources can be a dict {url: title} or a set/list of urls
+                            if isinstance(sources, dict):
+                                source_items = sources.items()
+                            else:
+                                source_items = ((url, None) for url in sources)
+                            for source_url, source_title in source_items:
                                 url_source = LanguageModelV1Source(
                                     sourceType="url",
                                     id=str(uuid.uuid4()),
                                     url=source_url,
+                                    title=source_title or None,
                                     providerMetadata={},
                                 )
                                 _new_source_ui = SourceUIPart(type="source", source=url_source)
