@@ -934,6 +934,53 @@ USER QUESTION:
         environ_prefix=None,
     )
 
+    # Legifrance API
+    LEGIFRANCE_TOOLS_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="LEGIFRANCE_TOOLS_ENABLED",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_API_BASE_URL = values.Value(
+        default="https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app",
+        environ_name="LEGIFRANCE_API_BASE_URL",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_OAUTH_URL = values.Value(
+        default="https://sandbox-oauth.piste.gouv.fr/api/oauth/token",
+        environ_name="LEGIFRANCE_OAUTH_URL",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_CLIENT_ID = values.Value(
+        default="",
+        environ_name="LEGIFRANCE_CLIENT_ID",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_CLIENT_SECRET = values.Value(
+        default="",
+        environ_name="LEGIFRANCE_CLIENT_SECRET",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_API_TOKEN = values.Value(
+        default="",
+        environ_name="LEGIFRANCE_API_TOKEN",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_OAUTH_HOST = values.Value(
+        default="",
+        environ_name="LEGIFRANCE_OAUTH_HOST",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_API_HOST = values.Value(
+        default="",
+        environ_name="LEGIFRANCE_API_HOST",
+        environ_prefix=None,
+    )
+    LEGIFRANCE_SSL_VERIFY = values.BooleanValue(
+        default=True,
+        environ_name="LEGIFRANCE_SSL_VERIFY",
+        environ_prefix=None,
+    )
+
     # Logging
     # We want to make it easy to log to console but by default we log production
     # to Sentry and don't want to log to console.

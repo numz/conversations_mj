@@ -185,6 +185,14 @@ class BaseAgent(Agent):
 
     def get_tools(self) -> list | None:
         """Override this method to customize tools."""
-        if not self.configuration.tools:
-            return []
-        return [get_pydantic_tools_by_name(tool_name) for tool_name in self.configuration.tools]
+        tools = []
+        if self.configuration.tools:
+            tools = [
+                get_pydantic_tools_by_name(tool_name) for tool_name in self.configuration.tools
+            ]
+
+        # Auto-inject Légifrance tools when feature flag is enabled
+        from chat.tools import get_legifrance_tools  # noqa: PLC0415
+
+        tools.extend(get_legifrance_tools())
+        return tools
