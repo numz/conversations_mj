@@ -10,6 +10,7 @@ import httpx
 from pydantic_ai import Agent
 from pydantic_ai.models import get_user_agent
 from pydantic_ai.profiles import ModelProfile
+from pydantic_ai.settings import ModelSettings
 
 from chat.tools import get_pydantic_tools_by_name
 
@@ -154,7 +155,7 @@ class BaseAgent(Agent):
 
     def __init__(self, *, model_hrid, **kwargs):
         """Initialize the agent with model configuration from settings."""
-        _ignored_kwargs = {"model", "system_prompt", "tools", "toolsets"}
+        _ignored_kwargs = {"model", "system_prompt", "tools", "toolsets", "model_settings"}
         if set(kwargs).intersection(_ignored_kwargs):
             raise ValueError(f"{_ignored_kwargs} arguments must not be provided.")
 
@@ -177,7 +178,21 @@ class BaseAgent(Agent):
 
         _tools = self.get_tools()
 
-        super().__init__(model=_model_instance, instructions=_system_prompt, tools=_tools, **kwargs)
+        _model_settings = self.get_model_settings()
+
+        super().__init__(
+            model=_model_instance,
+            instructions=_system_prompt,
+            tools=_tools,
+            model_settings=_model_settings,
+            **kwargs,
+        )
+
+    def get_model_settings(self) -> ModelSettings | None:
+        """Build ModelSettings from LLM configuration if settings are defined."""
+        if not self.configuration.settings:
+            return None
+        return ModelSettings(**self.configuration.settings.model_dump(exclude_unset=True))
 
     def get_system_prompt(self) -> str | None:
         """Override this method to customize the system prompt."""
