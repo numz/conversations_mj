@@ -148,13 +148,6 @@ export const splitStreamingContent = (content: string): StreamingContent => {
   return { completedBlocks, pending: pendingContent };
 };
 
-interface SourceMetadata {
-  title: string | null;
-  favicon: string | null;
-  loading: boolean;
-  error: boolean;
-}
-
 export interface MessageItemProps {
   message: Message;
   isLastMessage: boolean;
@@ -167,7 +160,6 @@ export interface MessageItemProps {
   isMobile: boolean;
   onCopyToClipboard: (content: string) => void;
   onOpenSources: (messageId: string) => void;
-  getMetadata: (url: string) => SourceMetadata | undefined;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -182,7 +174,6 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   isMobile,
   onCopyToClipboard,
   onOpenSources,
-  getMetadata,
 }) => {
   const { t } = useTranslation();
 
@@ -462,7 +453,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 animation: fade-in 0.2s ease-out;
               `}
             >
-              <SourceItemList parts={sourceParts} getMetadata={getMetadata} />
+              <SourceItemList parts={sourceParts} />
             </Box>
           )}
         </Box>
