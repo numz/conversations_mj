@@ -1,4 +1,4 @@
-import { Message, SourceUIPart } from '@ai-sdk/ui-utils';
+import { Message } from '@ai-sdk/ui-utils';
 import { Modal, ModalSize } from '@openfun/cunningham-react';
 import 'katex/dist/katex.min.css'; // `rehype-katex` does not import the CSS for you
 import { useRouter } from 'next/router';
@@ -25,7 +25,6 @@ import { PromptSuggestions } from '@/features/chat/components/PromptSuggestions'
 import { useClipboard } from '@/hook';
 import { useResponsiveStore } from '@/stores';
 
-import { useSourceMetadataCache } from '../hooks';
 import { useChatPreferencesStore } from '../stores/useChatPreferencesStore';
 import { usePendingChatStore } from '../stores/usePendingChatStore';
 import { useScrollStore } from '../stores/useScrollStore';
@@ -146,7 +145,6 @@ export const Chat = ({
   }, [setIsAtTop]);
 
   const [isSourceOpen, setIsSourceOpen] = useState<string | null>(null);
-  const { prefetchMetadata, getMetadata } = useSourceMetadataCache();
 
   const [initialConversationMessages, setInitialConversationMessages] =
     useState<Message[] | undefined>(undefined);
@@ -290,21 +288,6 @@ export const Chat = ({
     setFiles(lastFiles);
     setShouldRetry(true);
   };
-
-  // Précharger les métadonnées des sources dès que les messages arrivent
-  useEffect(() => {
-    messages.forEach((message) => {
-      if (message.parts) {
-        const sourceParts = message.parts.filter(
-          (part): part is SourceUIPart => part.type === 'source',
-        );
-        sourceParts.forEach((part) => {
-          void prefetchMetadata(part.source.url);
-        });
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
 
   const handleFeedbackUpdate = useCallback(
     (messageId: string, feedback: 'positive' | 'negative' | null) => {
@@ -721,7 +704,6 @@ export const Chat = ({
                 toolDisplayNames={toolDisplayNames}
                 onCopyToClipboard={handleCopy}
                 onOpenSources={openSources}
-                getMetadata={getMetadata}
                 onFeedbackUpdate={handleFeedbackUpdate}
               />
             ))}

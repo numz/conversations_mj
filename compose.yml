@@ -70,7 +70,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "8071:8000"
+      - "9071:8000"
     networks:
       - default
       - lasuite
@@ -92,7 +92,7 @@ services:
   nginx:
     image: nginx:1.25
     ports:
-      - "8083:8083"
+      - "9083:8083"
     networks:
       - default
       - lasuite
@@ -112,7 +112,7 @@ services:
       dockerfile: ./src/frontend/Dockerfile
       target: conversations-dev
       args:
-        API_ORIGIN: "http://localhost:8071"
+        API_ORIGIN: "http://localhost:9071"
     image: conversations:frontend-development
     volumes:
       - ./src/frontend:/home/frontend
@@ -159,7 +159,7 @@ services:
       - --features=preview
       - --import-realm
       - --proxy=edge
-      - --hostname=http://localhost:8083
+      - --hostname=http://localhost:9083
       - --hostname-strict=false
       - --health-enabled=true
       - --metrics-enabled=true

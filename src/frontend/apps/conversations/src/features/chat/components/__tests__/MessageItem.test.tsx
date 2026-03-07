@@ -362,7 +362,6 @@ describe('MessageItem', () => {
     isMobile: false,
     onCopyToClipboard: jest.fn(),
     onOpenSources: jest.fn(),
-    getMetadata: jest.fn(),
   };
 
   const renderWithProviders = (ui: React.ReactNode) => {
