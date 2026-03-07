@@ -1213,13 +1213,15 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
         conversation_has_documents = doc_result.has_documents
 
         await self._agent_stop_streaming(force_cache_check=True)
-        self._setup_web_search(force_web_search)
 
-        if await self._check_should_enable_rag(conversation_has_documents):
-            self._setup_rag_tools()
+        _mcp_tools_enabled = getattr(settings, "MCP_TOOLS_ENABLED", False)
+
+        if not _mcp_tools_enabled:
+            self._setup_web_search(force_web_search)
+            if await self._check_should_enable_rag(conversation_has_documents):
+                self._setup_rag_tools()
 
         async with AsyncExitStack() as stack:
-            # MCP servers (if any) can be initialized here
             mcp_servers = [await stack.enter_async_context(mcp) for mcp in get_mcp_servers()]
 
             # Help Mistral to prevent `Unexpected role 'user' after role 'tool'` error.
