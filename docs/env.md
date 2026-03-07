@@ -114,6 +114,15 @@ These are the environment variables you can set for the `conversations-backend` 
 | EXTENDED_METRICS_ENABLED                        | Display extended usage metrics (tokens, latency, carbon, energy) inline with assistant messages                                   | false                                                   |
 | EXTENDED_METRICS_MAPPING                        | JSON dict mapping metric names to dot-notation paths in LLM usage response (e.g. `{"cost":"cost","carbon_kwh_min":"carbon.kWh.min"}`) | (built-in defaults)                                 |
 | LOCAL_FEEDBACK_ENABLED                          | Enable local feedback persistence with comment/categories modal                                                                   | false                                                   |
+| LEGIFRANCE_TOOLS_ENABLED                        | Enable the Legifrance/Judilibre tool suite (feature flag)                                                                         | false                                                   |
+| LEGIFRANCE_API_BASE_URL                         | Base URL for the Legifrance API                                                                                                   | https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app |
+| LEGIFRANCE_OAUTH_URL                            | OAuth token endpoint for Legifrance API authentication                                                                            | https://sandbox-oauth.piste.gouv.fr/api/oauth/token     |
+| LEGIFRANCE_CLIENT_ID                            | OAuth client ID for Legifrance API                                                                                                |                                                         |
+| LEGIFRANCE_CLIENT_SECRET                        | OAuth client secret for Legifrance API                                                                                            |                                                         |
+| LEGIFRANCE_API_TOKEN                            | Static API token for Legifrance (alternative to OAuth)                                                                            |                                                         |
+| LEGIFRANCE_OAUTH_HOST                           | OAuth host override for Legifrance                                                                                                |                                                         |
+| LEGIFRANCE_API_HOST                             | API host override for Legifrance                                                                                                  |                                                         |
+| LEGIFRANCE_SSL_VERIFY                           | Enable SSL verification for Legifrance API calls                                                                                  | true                                                    |
 
 
 ## conversations-frontend image

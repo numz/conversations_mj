@@ -71,6 +71,22 @@ We want to add dynamic loading in the future.
 | `document_get_content`                   | Retrieve the full text content of a document                  | [Details](tools/document_tools.md#document_get_content)                     |
 | `document_analyze`                       | Analyze multiple documents (compare, match, compliance...)    | [Details](tools/document_tools.md#document_analyze)                         |
 
+### Legifrance Tools (Feature-Flagged)
+
+The following tools are **automatically injected** into all agents when the `LEGIFRANCE_TOOLS_ENABLED` feature flag is set to `True`. They do not need to be added to the `tools` list in the LLM configuration — they are loaded via `get_legifrance_tools()` in `chat/tools/__init__.py` and injected in `BaseAgent.get_tools()`.
+
+| Tool Name                                    | Description                                                        | Documentation                        |
+|----------------------------------------------|--------------------------------------------------------------------|--------------------------------------|
+| `legifrance_search_codes_lois`               | Search in French Codes and Laws (CODE, LODA)                       | [Details](tools/legifrance.md)       |
+| `legifrance_search_jurisprudence`            | Search in French Jurisprudence (judicial, administrative, etc.)    | [Details](tools/legifrance.md)       |
+| `legifrance_search_conventions`              | Search in Collective Bargaining & Company Agreements (KALI, ACCO)  | [Details](tools/legifrance.md)       |
+| `legifrance_search_admin`                    | Search in JORF, CIRC, and CNIL documents                           | [Details](tools/legifrance.md)       |
+| `legifrance_get_document`                    | Retrieve full text of a legal document by ID                       | [Details](tools/legifrance.md)       |
+| `legifrance_list_codes`                      | List available French legal codes                                  | [Details](tools/legifrance.md)       |
+| `legifrance_search_code_article_by_number`   | Search for a specific article number in a legal code               | [Details](tools/legifrance.md)       |
+| `judilibre_search`                           | Search in Judilibre (Court of Cassation open data)                 | [Details](tools/legifrance.md)       |
+| `judilibre_get_decision`                     | Get a full decision from Judilibre by ID                           | [Details](tools/legifrance.md)       |
+
 ## Adding a New Tool
 
 To add a new tool to the system, follow these steps:

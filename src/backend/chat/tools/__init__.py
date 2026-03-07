@@ -13,6 +13,38 @@ async def only_if_web_search_enabled(ctx, tool_def: ToolDefinition) -> ToolDefin
     return tool_def if ctx.deps.web_search_enabled else None
 
 
+def get_legifrance_tools() -> list[Tool]:
+    """Return Légifrance tools when the feature flag is enabled, empty list otherwise."""
+    from django.conf import settings  # noqa: PLC0415
+
+    if not getattr(settings, "LEGIFRANCE_TOOLS_ENABLED", False):
+        return []
+
+    from .legifrance import (  # noqa: PLC0415
+        judilibre_get_decision,
+        judilibre_search,
+        legifrance_get_document,
+        legifrance_list_codes,
+        legifrance_search_admin,
+        legifrance_search_code_article_by_number,
+        legifrance_search_codes_lois,
+        legifrance_search_conventions,
+        legifrance_search_jurisprudence,
+    )
+
+    return [
+        Tool(legifrance_search_codes_lois, takes_ctx=True, max_retries=5),
+        Tool(legifrance_search_jurisprudence, takes_ctx=True, max_retries=5),
+        Tool(legifrance_search_conventions, takes_ctx=True, max_retries=5),
+        Tool(legifrance_search_admin, takes_ctx=True, max_retries=5),
+        Tool(legifrance_get_document, takes_ctx=True, max_retries=5),
+        Tool(legifrance_list_codes, takes_ctx=True, max_retries=5),
+        Tool(legifrance_search_code_article_by_number, takes_ctx=True, max_retries=5),
+        Tool(judilibre_search, takes_ctx=True, max_retries=5),
+        Tool(judilibre_get_decision, takes_ctx=True, max_retries=5),
+    ]
+
+
 def get_pydantic_tools_by_name(name: str) -> Tool:
     """Get a tool by its name."""
     tool_dict = {
@@ -41,6 +73,7 @@ def get_pydantic_tools_by_name(name: str) -> Tool:
             prepare=only_if_web_search_enabled,
             max_retries=2,
         ),
+        **_get_legifrance_tools(),
     }
 
     return tool_dict[name]  # will raise on purpose if name is not found

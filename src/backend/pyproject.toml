@@ -158,6 +158,8 @@ extra-standard-library = ["tomllib"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*" = ["S", "SLF"]
+"chat/tools/legifrance/**" = ["BLE001", "PLC0415", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "S105", "S110", "S324"]
+"chat/tests/tools/legifrance/**" = ["PLC0415"]
 
 [tool.pytest.ini_options]
 addopts = [
