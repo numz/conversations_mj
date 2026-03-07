@@ -1014,6 +1014,13 @@ USER QUESTION:
         environ_prefix=None,
     )
 
+    ENABLE_TABLE_DESIGN = values.BooleanValue(
+        default=True, environ_name="ENABLE_TABLE_DESIGN", environ_prefix=None
+    )
+    ENABLE_TABLE_EXPORT = values.BooleanValue(
+        default=True, environ_name="ENABLE_TABLE_EXPORT", environ_prefix=None
+    )
+
     # Default keepalive interval: 55s (safely below typical 60s proxy timeouts)
     # Prevents connection drops during long stream pauses while providing 5s safety margin.
     KEEPALIVE_INTERVAL = values.PositiveIntegerValue(

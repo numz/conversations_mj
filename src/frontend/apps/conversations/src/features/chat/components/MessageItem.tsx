@@ -313,7 +313,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
           {/* Message content */}
           {message.content && (
             <Box
-              className="mainContent-chat"
+              className={`mainContent-chat${featureFlags.enable_table_design ? ' table-enhanced' : ''}`}
               data-testid={
                 message.role === 'assistant'
                   ? 'assistant-message-content'

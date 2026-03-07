@@ -225,6 +225,11 @@ class ConfigView(drf.views.APIView):
 
         dict_settings["chat_upload_accept"] = ",".join(settings.RAG_FILES_ACCEPTED_FORMATS)
 
+        dict_settings["feature_flags_custom"] = {
+            "enable_table_design": settings.ENABLE_TABLE_DESIGN,
+            "enable_table_export": settings.ENABLE_TABLE_EXPORT,
+        }
+
         return drf.response.Response(dict_settings)
 
     def _load_theme_customization(self):
