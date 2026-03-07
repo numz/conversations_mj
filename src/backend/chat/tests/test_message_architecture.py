@@ -32,13 +32,9 @@ def _make_pydantic_json(pairs):
     msgs = []
     for role, text in pairs:
         if role == "user":
-            msgs.append(
-                ModelRequest(parts=[UserPromptPart(content=text)], kind="request")
-            )
+            msgs.append(ModelRequest(parts=[UserPromptPart(content=text)], kind="request"))
         else:
-            msgs.append(
-                ModelResponse(parts=[TextPart(content=text)], kind="response")
-            )
+            msgs.append(ModelResponse(parts=[TextPart(content=text)], kind="response"))
     return json.loads(ModelMessagesTypeAdapter.dump_json(msgs).decode("utf-8"))
 
 
@@ -157,19 +153,19 @@ class TestGetComputedMessages:
         assert len(source_parts) == 0
 
     def test_invalid_pydantic_messages_returns_empty(self):
-        conv = factories.ChatConversationFactory(
-            pydantic_messages=[{"invalid": "data"}]
-        )
+        conv = factories.ChatConversationFactory(pydantic_messages=[{"invalid": "data"}])
         result = conv.get_computed_messages()
         assert result == []
 
     def test_multi_turn_conversation(self):
-        pydantic_json = _make_pydantic_json([
-            ("user", "Hello"),
-            ("assistant", "Hi!"),
-            ("user", "How are you?"),
-            ("assistant", "I'm good!"),
-        ])
+        pydantic_json = _make_pydantic_json(
+            [
+                ("user", "Hello"),
+                ("assistant", "Hi!"),
+                ("user", "How are you?"),
+                ("assistant", "I'm good!"),
+            ]
+        )
         conv = factories.ChatConversationFactory(pydantic_messages=pydantic_json)
 
         result = conv.get_computed_messages()

@@ -220,7 +220,7 @@ export const FeedbackButtons = ({
           leftActions={
             <Button
               aria-label={t('Annuler')}
-              color="tertiary"
+              color="neutral"
               onClick={handleCloseModal}
             >
               {t('Annuler')}
@@ -229,7 +229,7 @@ export const FeedbackButtons = ({
           rightActions={
             <Button
               aria-label={t('Envoyer le retour')}
-              color="primary"
+              color="brand"
               onClick={() => void handleSubmitFeedback()}
             >
               {t('Envoyer')}

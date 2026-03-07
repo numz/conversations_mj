@@ -2,8 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from django.test import override_settings
+
+import pytest
 from rest_framework import status
 
 from core.factories import UserFactory
