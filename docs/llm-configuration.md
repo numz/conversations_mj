@@ -11,9 +11,9 @@ Conversations uses a JSON configuration file to define LLM models and providers.
 - Enable or disable models dynamically
 
 The overall structure consists of two main sections: `providers` and `models`.
-Settings for models, provides customization through `settings` and `profile`, which corresponds to the 
-Pydantic AI model settings and profile. While we currently not use those settings extensively, 
-they are available for future use and advanced configurations, please reach us if you face any problem using them.
+Settings for models, provides customization through `settings` and `profile`, which corresponds to the
+Pydantic AI model settings and profile. These settings are passed through to the underlying Pydantic AI Agent
+and are applied during inference (e.g. `temperature`, `max_tokens`, `top_p`).
 
 ## Configuration File Location
 
