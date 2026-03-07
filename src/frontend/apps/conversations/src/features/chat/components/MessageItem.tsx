@@ -1,8 +1,9 @@
-import { Message, SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
+import { SourceUIPart, ToolInvocationUIPart } from '@ai-sdk/ui-utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Icon, Loader, Text } from '@/components';
+import { useFeatureFlags } from '@/core/config/api';
 import { AttachmentList } from '@/features/chat/components/AttachmentList';
 import { FeedbackButtons } from '@/features/chat/components/FeedbackButtons';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/features/chat/components/MessageBlock';
 import { SourceItemList } from '@/features/chat/components/SourceItemList';
 import { ToolInvocationItem } from '@/features/chat/components/ToolInvocationItem';
+import { ChatMessage } from '@/features/chat/types';
 
 // Memoized blocks list to prevent parent re-renders from causing block remounts
 const BlocksList = React.memo(
@@ -156,7 +158,7 @@ interface SourceMetadata {
 }
 
 export interface MessageItemProps {
-  message: Message;
+  message: ChatMessage;
   isLastMessage: boolean;
   isLastAssistantMessage: boolean;
   isFirstConversationMessage: boolean;
@@ -168,6 +170,10 @@ export interface MessageItemProps {
   onCopyToClipboard: (content: string) => void;
   onOpenSources: (messageId: string) => void;
   getMetadata: (url: string) => SourceMetadata | undefined;
+  onFeedbackUpdate?: (
+    messageId: string,
+    feedback: 'positive' | 'negative' | null,
+  ) => void;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -183,8 +189,11 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   onCopyToClipboard,
   onOpenSources,
   getMetadata,
+  onFeedbackUpdate,
 }) => {
   const { t } = useTranslation();
+  const featureFlags = useFeatureFlags();
+  const localFeedbackEnabled = !!featureFlags.local_feedback_enabled;
 
   const shouldApplyStreamingHeight =
     isLastAssistantMessage &&
@@ -446,10 +455,21 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 <Box $direction="row" $gap="4px">
                   {conversationId &&
                     message.id &&
-                    message.id.startsWith('trace-') && (
+                    (localFeedbackEnabled ||
+                      message.id.startsWith('trace-')) && (
                       <FeedbackButtons
                         conversationId={conversationId}
                         messageId={message.id}
+                        initialFeedback={
+                          localFeedbackEnabled ? message.feedback : undefined
+                        }
+                        onFeedbackUpdate={
+                          localFeedbackEnabled
+                            ? (feedback) =>
+                                onFeedbackUpdate?.(message.id, feedback)
+                            : undefined
+                        }
+                        localFeedbackEnabled={localFeedbackEnabled}
                       />
                     )}
                 </Box>
@@ -532,6 +552,9 @@ const arePropsEqual = (
     return false;
   }
   if (prevProps.conversationId !== nextProps.conversationId) {
+    return false;
+  }
+  if (prevProps.message.feedback !== nextProps.message.feedback) {
     return false;
   }
 

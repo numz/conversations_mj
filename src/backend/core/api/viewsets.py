@@ -225,6 +225,7 @@ class ConfigView(drf.views.APIView):
         # Individual flags are added by their respective features
         dict_settings["feature_flags_custom"] = {
             "message_architecture_enabled": settings.MESSAGE_ARCHITECTURE_ENABLED,
+            "local_feedback_enabled": getattr(settings, "LOCAL_FEEDBACK_ENABLED", False),
         }
 
         dict_settings["theme_customization"] = self._load_theme_customization()
