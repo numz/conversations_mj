@@ -67,6 +67,7 @@ async def _authenticate() -> str:
 
     # Use static token if available
     if API_TOKEN:
+        logger.debug("[AUTH] Using static API_TOKEN")
         return API_TOKEN
 
     # Check in-memory cache
@@ -74,7 +75,10 @@ async def _authenticate() -> str:
         return _token_cache["token"]
 
     if not CLIENT_ID or not CLIENT_SECRET:
+        logger.error("[AUTH] Missing LEGIFRANCE_CLIENT_ID or LEGIFRANCE_CLIENT_SECRET")
         raise RuntimeError("LEGIFRANCE_CLIENT_ID and LEGIFRANCE_CLIENT_SECRET required")
+
+    logger.info("[AUTH] Requesting OAuth token from %s (client_id=%s...)", OAUTH_URL, CLIENT_ID[:8] if CLIENT_ID else "EMPTY")
 
     headers = {}
     if OAUTH_URL:
@@ -112,6 +116,9 @@ async def _api_request(method: str, path: str, payload: dict) -> dict | None:
     if API_HOST:
         headers["Host"] = API_HOST
 
+    logger.info("[LEGIFRANCE] %s %s", method.upper(), url)
+    logger.info("[LEGIFRANCE] Payload: %s", payload)
+
     async with httpx.AsyncClient(verify=SSL_VERIFY, timeout=TIMEOUT) as client:
         for attempt in range(MAX_RETRIES):
             try:
@@ -120,23 +127,36 @@ async def _api_request(method: str, path: str, payload: dict) -> dict | None:
                 else:
                     resp = await client.get(url, headers=headers)
 
+                logger.info("[LEGIFRANCE] Response status: %d (attempt %d)", resp.status_code, attempt + 1)
+
                 if resp.status_code == 401 and attempt == 0:
+                    logger.warning("[LEGIFRANCE] 401 — refreshing token")
                     _token_cache["token"] = ""
                     token = await _authenticate()
                     headers["Authorization"] = f"Bearer {token}"
                     continue
 
                 if resp.status_code == 421:
+                    logger.warning("[LEGIFRANCE] 421 — retrying after delay")
                     await asyncio.sleep(0.5 * (attempt + 1))
                     continue
 
                 resp.raise_for_status()
-                return resp.json()
+                data = resp.json()
+                # Log a summary of the response (truncated to avoid flooding)
+                result_count = len(data.get("results", [])) if isinstance(data, dict) else "N/A"
+                logger.info("[LEGIFRANCE] Response OK — %s results, keys: %s", result_count, list(data.keys()) if isinstance(data, dict) else type(data).__name__)
+                logger.debug("[LEGIFRANCE] Raw response (first 2000 chars): %.2000s", data)
+                return data
 
             except httpx.TimeoutException:
+                logger.error("[LEGIFRANCE] Timeout on attempt %d for %s", attempt + 1, url)
                 if attempt < MAX_RETRIES - 1:
                     await asyncio.sleep(0.5 * (attempt + 1))
                     continue
+                raise
+            except httpx.HTTPStatusError as exc:
+                logger.error("[LEGIFRANCE] HTTP %d for %s: %s", exc.response.status_code, url, exc.response.text[:500])
                 raise
     return None
 
@@ -152,10 +172,21 @@ async def _judilibre_request(path: str, params: dict) -> dict | None:
     if JUDILIBRE_KEY_VALUE:
         headers[JUDILIBRE_KEY_NAME] = JUDILIBRE_KEY_VALUE
 
+    logger.info("[JUDILIBRE] GET %s params=%s", url, params)
+
     async with httpx.AsyncClient(verify=SSL_VERIFY, timeout=TIMEOUT) as client:
         resp = await client.get(url, params=params, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        logger.info("[JUDILIBRE] Response status: %d", resp.status_code)
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("[JUDILIBRE] HTTP %d: %s", exc.response.status_code, exc.response.text[:500])
+            raise
+        data = resp.json()
+        result_count = len(data.get("results", data)) if isinstance(data, dict) else len(data) if isinstance(data, list) else "N/A"
+        logger.info("[JUDILIBRE] Response OK — %s results", result_count)
+        logger.debug("[JUDILIBRE] Raw response (first 2000 chars): %.2000s", data)
+        return data
 
 
 def _build_source_url(article_id: str) -> str:
@@ -205,6 +236,7 @@ def register(mcp: FastMCP) -> None:
             code_name: Name of the code to search in (e.g. "Code civil", "Code pénal").
             date: Optional validity date in YYYY-MM-DD format.
         """
+        logger.info("[TOOL] legifrance_search_codes_lois(query=%r, type_source=%r, code_name=%r, date=%r)", query, type_source, code_name, date)
         fond = "CODE_DATE" if type_source == "CODE" else "LODA_DATE"
         criteres = [
             {
@@ -254,6 +286,8 @@ def register(mcp: FastMCP) -> None:
                     "sections": [_clean_html(t.get("title", "")) for t in titles[1:]],
                 }
             )
+        logger.info("[TOOL] legifrance_search_codes_lois -> %d results, %d sources", len(formatted), len(sources))
+        logger.debug("[TOOL] legifrance_search_codes_lois results: %s", formatted)
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -273,6 +307,7 @@ def register(mcp: FastMCP) -> None:
             numero_decision: Optional specific decision number.
             sort: Sort order — "PERTINENCE", "DATE_DESC", or "DATE_ASC".
         """
+        logger.info("[TOOL] legifrance_search_jurisprudence(query=%r, juridiction=%r, date=%r)", query, juridiction, date)
         fond_map = {
             "JUDICIAIRE": "JURI",
             "ADMINISTRATIF": "CETAT",
@@ -322,6 +357,7 @@ def register(mcp: FastMCP) -> None:
                 url, src_title = _build_source_with_title(article_id, title)
                 sources[url] = src_title
             formatted.append({"id": article_id, "title": title})
+        logger.info("[TOOL] legifrance_search_jurisprudence -> %d results, %d sources", len(formatted), len(sources))
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -341,6 +377,7 @@ def register(mcp: FastMCP) -> None:
             date: Optional signature date in YYYY-MM-DD format.
             etat_texte: Legal status filter (default "VIGUEUR" = currently in force).
         """
+        logger.info("[TOOL] legifrance_search_conventions(query=%r, type_source=%r)", query, type_source)
         fond = type_source
         criteres = [
             {
@@ -387,6 +424,7 @@ def register(mcp: FastMCP) -> None:
                 url, src_title = _build_source_with_title(article_id, title)
                 sources[url] = src_title
             formatted.append({"id": article_id, "title": title})
+        logger.info("[TOOL] legifrance_search_conventions -> %d results, %d sources", len(formatted), len(sources))
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -406,6 +444,7 @@ def register(mcp: FastMCP) -> None:
             nor: Optional NOR number.
             nature_delib: Optional deliberation nature (for CNIL source only).
         """
+        logger.info("[TOOL] legifrance_search_admin(query=%r, source=%r)", query, source)
         fond = source
         criteres = [
             {
@@ -457,6 +496,7 @@ def register(mcp: FastMCP) -> None:
                 url, src_title = _build_source_with_title(article_id, title)
                 sources[url] = src_title
             formatted.append({"id": article_id, "title": title})
+        logger.info("[TOOL] legifrance_search_admin -> %d results, %d sources", len(formatted), len(sources))
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -466,6 +506,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             article_id: The document identifier (e.g. "LEGIARTI000...", "JORFTEXT000...", "KALITEXT000...").
         """
+        logger.info("[TOOL] legifrance_get_document(article_id=%r)", article_id)
         if not article_id or len(article_id) < 8:
             return {"error": "Invalid article_id — must be a valid Legifrance identifier."}
 
@@ -523,6 +564,7 @@ def register(mcp: FastMCP) -> None:
             code_name: Name of the code (e.g. "Code pénal", "Code civil").
             article_num: Article number (e.g. "1240", "123-1").
         """
+        logger.info("[TOOL] legifrance_search_code_article_by_number(code_name=%r, article_num=%r)", code_name, article_num)
         payload = {
             "fond": "CODE_DATE",
             "recherche": {
@@ -562,6 +604,7 @@ def register(mcp: FastMCP) -> None:
             formatted.append(
                 {"id": article_id, "title": title, "status": etat}
             )
+        logger.info("[TOOL] legifrance_search_code_article_by_number -> %d results, %d sources", len(formatted), len(sources))
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -571,6 +614,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             code_name: Optional filter — partial or full code name to search for.
         """
+        logger.info("[TOOL] legifrance_list_codes(code_name=%r)", code_name)
         payload = {
             "codeName": code_name,
             "pageNumber": 1,
@@ -593,6 +637,7 @@ def register(mcp: FastMCP) -> None:
                     "etat": r.get("etat", ""),
                 }
             )
+        logger.info("[TOOL] legifrance_list_codes -> %d results", len(formatted))
         return {"results": formatted}
 
     # -----------------------------------------------------------------------
@@ -618,6 +663,7 @@ def register(mcp: FastMCP) -> None:
             solution: Optional — "cassation", "rejet", "annulation", "irrecevabilite".
             publication: Optional — "b" (Bulletin), "r" (Rapport), "l" (Lettre).
         """
+        logger.info("[TOOL] judilibre_search(query=%r, jurisdiction=%r)", query, jurisdiction)
         if len(query) < 2:
             return {"error": "Query must be at least 2 characters."}
 
@@ -664,6 +710,7 @@ def register(mcp: FastMCP) -> None:
                     "themes": themes[:5] if themes else [],
                 }
             )
+        logger.info("[TOOL] judilibre_search -> %d results, %d sources", len(formatted), len(sources))
         return {"results": formatted, "sources": sources}
 
     @mcp.tool()
@@ -673,6 +720,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             decision_id: The Judilibre decision identifier (minimum 10 characters).
         """
+        logger.info("[TOOL] judilibre_get_decision(decision_id=%r)", decision_id)
         if len(decision_id) < 10:
             return {"error": "decision_id must be at least 10 characters."}
 

@@ -14,7 +14,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 logging.basicConfig(
-    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    level=os.environ.get("LOG_LEVEL", "DEBUG").upper(),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("mcp-server")
