@@ -121,9 +121,7 @@ class ChatConversation(BaseModel):
 
         ModelMessagesTypeAdapter = TypeAdapter(list[ModelMessage])
         try:
-            parsed_messages = ModelMessagesTypeAdapter.validate_python(
-                self.pydantic_messages
-            )
+            parsed_messages = ModelMessagesTypeAdapter.validate_python(self.pydantic_messages)
         except Exception:
             logger.exception(
                 "Failed to parse pydantic_messages for conversation %s",
@@ -148,9 +146,7 @@ class ChatConversation(BaseModel):
                         for source_item in sources_data:
                             source_obj = SourceUIPart(
                                 type="source",
-                                source=LanguageModelV1Source(
-                                    **source_item["source"]
-                                ),
+                                source=LanguageModelV1Source(**source_item["source"]),
                             )
                             ui_msg.parts.append(source_obj)
 

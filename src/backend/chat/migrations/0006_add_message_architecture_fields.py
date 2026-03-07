@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chat", "0005_chatconversation_title_set_by_user_at"),
     ]
