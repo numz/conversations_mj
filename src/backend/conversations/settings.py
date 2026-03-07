@@ -1080,6 +1080,25 @@ USER QUESTION:
         default=55, environ_name="KEEPALIVE_INTERVAL", environ_prefix=None
     )
 
+    # Extended metrics extraction from LLM responses (OpenGateLLM)
+    # Maps metric names to JSON paths in the usage data (dot notation for nested fields)
+    EXTENDED_METRICS_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="EXTENDED_METRICS_ENABLED",
+        environ_prefix=None,
+    )
+    EXTENDED_METRICS_MAPPING = values.DictValue(
+        default={
+            "cost": "cost",
+            "carbon_kwh_min": "carbon.kWh.min",
+            "carbon_kwh_max": "carbon.kWh.max",
+            "carbon_kgco2eq_min": "carbon.kgCO2eq.min",
+            "carbon_kgco2eq_max": "carbon.kgCO2eq.max",
+        },
+        environ_name="EXTENDED_METRICS_MAPPING",
+        environ_prefix=None,
+    )
+
     # Feature flag: table export CSV
     ENABLE_TABLE_EXPORT = values.BooleanValue(
         default=True,

@@ -135,7 +135,7 @@ class MessageAnnotationPart(BaseEvent):
     annotations: List[JSONValue]
 
     def model_dump_json(self, *args, **kwargs) -> str:
-        return json.dumps(self.data)
+        return json.dumps(self.annotations)
 
 
 class ErrorPart(BaseEvent):
