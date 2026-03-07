@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("chat", "0006_add_message_architecture_fields"),
+        ("chat", "0007_add_message_usages"),
     ]
 
     operations = [
