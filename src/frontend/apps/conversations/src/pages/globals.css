@@ -297,6 +297,7 @@ figure[data-rehype-pretty-code-figure] > pre > code {
   display: block;
 }
 
+/* Default table styles */
 .mainContent-chat table {
   display: block;
   width: 100%;
@@ -329,6 +330,56 @@ figure[data-rehype-pretty-code-figure] > pre > code {
 .mainContent-chat table td,
 .mainContent-chat table th {
   min-width: 200px;
+}
+
+/* Enhanced table design (feature flag: enable_table_design) */
+.table-enhanced.mainContent-chat table {
+  display: table;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.9rem;
+  box-shadow: 0 0 20px rgb(0 0 0 / 5%);
+  border-radius: 8px;
+  table-layout: auto;
+  overflow-x: auto;
+}
+
+.table-enhanced.mainContent-chat th,
+.table-enhanced.mainContent-chat td {
+  display: table-cell;
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--c--contextuals--border--surface--primary);
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  min-width: auto;
+}
+
+.table-enhanced.mainContent-chat th {
+  background-color: var(--c--contextuals--background--semantic--neutral--secondary);
+  font-weight: 600;
+  font-size: inherit;
+  color: var(--c--contextuals--content--semantic--neutral--primary);
+}
+
+.table-enhanced.mainContent-chat tr {
+  display: table-row;
+}
+
+.table-enhanced.mainContent-chat tbody tr:nth-of-type(even) {
+  background-color: var(--c--contextuals--background--semantic--neutral--tertiary);
+}
+
+.table-enhanced.mainContent-chat tbody tr:last-of-type {
+  border-bottom: 2px solid var(--c--contextuals--semantic--brand--primary);
+}
+
+@media (width <= 768px) {
+  .table-enhanced.mainContent-chat th,
+  .table-enhanced.mainContent-chat td {
+    padding: 10px 12px;
+  }
 }
 
 /* Reasoning Box */
@@ -397,7 +448,6 @@ figure[data-rehype-pretty-code-figure] > pre > code {
 .reasoning-streaming-indicator {
   animation: pulse 1.5s ease-in-out infinite;
 }
-
 .sr-only {
   position: absolute;
   width: 1px;
