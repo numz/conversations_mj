@@ -126,6 +126,7 @@ These are the environment variables you can set for the `conversations-backend` 
 | LEGIFRANCE_OAUTH_HOST                           | OAuth host override for Legifrance                                                                                                |                                                         |
 | LEGIFRANCE_API_HOST                             | API host override for Legifrance                                                                                                  |                                                         |
 | LEGIFRANCE_SSL_VERIFY                           | Enable SSL verification for Legifrance API calls                                                                                  | true                                                    |
+| TOOL_NAME_SANITIZE_ENABLED                      | Enable sanitization of hallucinated tool names (removes `<\|channel\|>`, `<\|start\|>` tokens)                                    | false                                                   |
 
 
 ## conversations-frontend image

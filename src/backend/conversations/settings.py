@@ -1059,7 +1059,6 @@ USER QUESTION:
     AUTO_TITLE_AFTER_USER_MESSAGES = values.PositiveIntegerValue(
         default=None, environ_name="AUTO_TITLE_AFTER_USER_MESSAGES", environ_prefix=None
     )
-<<<<<<< HEAD
     # Local feedback persistence (store feedback in DB instead of Langfuse only)
     LOCAL_FEEDBACK_ENABLED = values.BooleanValue(
         default=False,
@@ -1131,6 +1130,12 @@ USER QUESTION:
     STREAMING_CANCEL_EVENT_ENABLED = values.BooleanValue(
         False,
         environ_name="STREAMING_CANCEL_EVENT_ENABLED",
+        environ_prefix=None,
+    )
+
+    TOOL_NAME_SANITIZE_ENABLED = values.BooleanValue(
+        False,
+        environ_name="TOOL_NAME_SANITIZE_ENABLED",
         environ_prefix=None,
     )
     # WARNING: Testing purpose only. Do not use in production.
