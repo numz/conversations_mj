@@ -2,12 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY pyproject.toml .
-RUN pip install --no-cache-dir ".[all]"
-
-# Copy application code
+# Copy application code and install dependencies
 COPY . .
+RUN pip install --no-cache-dir ".[all]"
 
 # Default environment
 ENV MCP_TRANSPORT=streamable-http

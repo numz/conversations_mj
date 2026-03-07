@@ -55,15 +55,23 @@ mcp = FastMCP(
     port=args.port,
 )
 
-# Register all tool modules
-from tools import documents, legifrance, weather, web_search  # noqa: E402
+# Register tool modules based on MCP_ENABLED_MODULES (default: all)
+_enabled = os.environ.get("MCP_ENABLED_MODULES", "").strip()
+_enabled_modules = {m.strip() for m in _enabled.split(",") if m.strip()} if _enabled else None
 
-weather.register(mcp)
-web_search.register(mcp)
-documents.register(mcp)
-legifrance.register(mcp)
+_all_modules = {
+    "weather": lambda: __import__("tools.weather", fromlist=["register"]).register(mcp),
+    "web_search": lambda: __import__("tools.web_search", fromlist=["register"]).register(mcp),
+    "documents": lambda: __import__("tools.documents", fromlist=["register"]).register(mcp),
+    "legifrance": lambda: __import__("tools.legifrance", fromlist=["register"]).register(mcp),
+}
 
-logger.info("All tool modules registered.")
+for name, register_fn in _all_modules.items():
+    if _enabled_modules is None or name in _enabled_modules:
+        register_fn()
+        logger.info("Registered module: %s", name)
+    else:
+        logger.info("Skipped module: %s", name)
 
 
 def main():
