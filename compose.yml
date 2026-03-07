@@ -114,6 +114,8 @@ services:
       args:
         API_ORIGIN: "http://localhost:9071"
     image: conversations:frontend-development
+    environment:
+      - NEXT_PUBLIC_API_ORIGIN=http://localhost:9071
     volumes:
       - ./src/frontend:/home/frontend
       - /home/frontend/node_modules
