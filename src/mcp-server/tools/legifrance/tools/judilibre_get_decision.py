@@ -1,0 +1,165 @@
+"""Tool for getting a full decision from Judilibre.
+
+Standalone version (no pydantic-ai dependency).
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from ..judilibre_api import JudilibreAPI
+
+logger = logging.getLogger(__name__)
+
+JUDILIBRE_BASE_URL = "https://www.courdecassation.fr/decision"
+
+
+class JudilibreGetDecisionInput(BaseModel):
+    """Validated input for getting a Judilibre decision."""
+
+    decision_id: str = Field(..., min_length=10, description="Judilibre decision ID")
+
+
+def _format_full_decision(decision: dict[str, Any]) -> str:
+    """Format a full decision for display."""
+    parts = []
+
+    # Header
+    jurisdiction = decision.get("jurisdiction", "")
+    chamber = decision.get("chamber", "")
+    number = decision.get("number", "N/A")
+    date = decision.get("decision_date", "")
+
+    parts.append(f"# {jurisdiction} - {chamber}")
+    parts.append(f"**Numero:** {number}")
+    parts.append(f"**Date:** {date}")
+
+    # ECLI
+    ecli = decision.get("ecli")
+    if ecli:
+        parts.append(f"**ECLI:** {ecli}")
+
+    # Solution and type
+    solution = decision.get("solution")
+    decision_type = decision.get("type")
+    if solution:
+        parts.append(f"**Solution:** {solution}")
+    if decision_type:
+        parts.append(f"**Type:** {decision_type}")
+
+    # Publication
+    publication = decision.get("publication", [])
+    if publication:
+        pub_str = ", ".join(publication) if isinstance(publication, list) else publication
+        parts.append(f"**Publication:** {pub_str}")
+
+    # Summary
+    summary = decision.get("summary")
+    if summary:
+        parts.append(f"\n## Resume\n{summary}")
+
+    # Themes
+    themes = decision.get("themes", [])
+    if themes:
+        parts.append(f"\n## Themes\n- " + "\n- ".join(themes))
+
+    # Visa (legal references)
+    visa = decision.get("visa", [])
+    if visa:
+        parts.append("\n## Visa (textes appliques)")
+        for v in visa:
+            title = v.get("title", "")
+            if title:
+                parts.append(f"- {title}")
+
+    # Rapprochements (related jurisprudence)
+    rapprochements = decision.get("rapprochements", [])
+    if rapprochements:
+        parts.append("\n## Jurisprudence connexe")
+        for r in rapprochements[:5]:  # Limit to 5
+            title = r.get("title", "")
+            if title:
+                parts.append(f"- {title}")
+        if len(rapprochements) > 5:
+            parts.append(f"- (+{len(rapprochements) - 5} autres)")
+
+    # Contested decision
+    contested = decision.get("contested")
+    if contested and isinstance(contested, dict):
+        contested_date = contested.get("date", "")
+        contested_title = contested.get("title", "")
+        if contested_title or contested_date:
+            parts.append(f"\n## Decision attaquee\n{contested_title} ({contested_date})")
+
+    # Full text (truncated if very long)
+    text = decision.get("text", "")
+    if text:
+        parts.append("\n## Texte integral")
+        if len(text) > 8000:
+            parts.append(text[:8000] + "\n\n[...texte tronque pour lisibilite...]")
+        else:
+            parts.append(text)
+
+    return "\n".join(parts)
+
+
+async def judilibre_get_decision(
+    decision_id: str,
+) -> dict:
+    """
+    Recupere le contenu COMPLET d'une decision de la Cour de cassation via Judilibre.
+
+    Args:
+        decision_id: L'identifiant unique Judilibre (ex: "6079c56a9ba5988459c57490").
+
+    Returns:
+        Dict with the full decision content and sources.
+    """
+    try:
+        # Validate input
+        try:
+            validated = JudilibreGetDecisionInput(decision_id=decision_id)
+        except Exception as e:
+            return {"error": f"Parametre invalide: {e}", "results": "", "sources": {}}
+
+        # Fetch decision
+        api = JudilibreAPI()
+
+        decision = await api.get_decision(
+            decision_id=validated.decision_id,
+            resolve_references=True,
+        )
+
+        if not decision:
+            return {
+                "results": f"Decision non trouvee: {decision_id}",
+                "found": False,
+                "sources": {},
+            }
+
+        # Convert to dict and format
+        decision_dict = decision.model_dump()
+        formatted = _format_full_decision(decision_dict)
+
+        # Build source URL
+        url = f"{JUDILIBRE_BASE_URL}/{decision_id}"
+        number = decision_dict.get("number", decision_id)
+        jurisdiction = decision_dict.get("jurisdiction", "Judilibre")
+        title = f"{jurisdiction} - {number}"
+
+        return {
+            "results": formatted,
+            "found": True,
+            "sources": {url: title},
+        }
+
+    except Exception as exc:
+        logger.exception("Error in judilibre_get_decision: %s", exc)
+        return {
+            "error": f"Erreur lors de la recuperation de la decision: {type(exc).__name__}: {exc}",
+            "results": "",
+            "sources": {},
+        }
