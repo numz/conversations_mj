@@ -22,7 +22,6 @@ import { MessageItem } from '@/features/chat/components/MessageItem';
 import { useClipboard } from '@/hook';
 import { useResponsiveStore } from '@/stores';
 
-import { useFeatureFlags } from '@/core/config/api';
 import { useSourceMetadataCache } from '../hooks';
 import { useChatPreferencesStore } from '../stores/useChatPreferencesStore';
 import { usePendingChatStore } from '../stores/usePendingChatStore';
@@ -43,9 +42,6 @@ export const Chat = ({
   const { t } = useTranslation();
   const copyToClipboard = useClipboard();
   const { isMobile } = useResponsiveStore();
-  const featureFlags = useFeatureFlags();
-  const messageArchitectureEnabled =
-    !!featureFlags.message_architecture_enabled;
 
   const streamProtocol = 'data'; // or 'text'
 

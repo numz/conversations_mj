@@ -3,7 +3,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Icon, Loader, Text } from '@/components';
-import { useFeatureFlags } from '@/core/config/api';
 import { AttachmentList } from '@/features/chat/components/AttachmentList';
 import { FeedbackButtons } from '@/features/chat/components/FeedbackButtons';
 import {
@@ -186,9 +185,6 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   getMetadata,
 }) => {
   const { t } = useTranslation();
-  const featureFlags = useFeatureFlags();
-  const messageArchitectureEnabled =
-    !!featureFlags.message_architecture_enabled;
 
   const shouldApplyStreamingHeight =
     isLastAssistantMessage &&
@@ -450,8 +446,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
                 <Box $direction="row" $gap="4px">
                   {conversationId &&
                     message.id &&
-                    (messageArchitectureEnabled ||
-                      message.id.startsWith('trace-')) && (
+                    message.id.startsWith('trace-') && (
                       <FeedbackButtons
                         conversationId={conversationId}
                         messageId={message.id}
