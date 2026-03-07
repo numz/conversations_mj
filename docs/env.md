@@ -98,6 +98,15 @@ These are the environment variables you can set for the `conversations-backend` 
 | FIND_API_KEY                                    | API key of Find                                                                                                                   |                                                         |
 | FIND_API_URL                                    | URL of Find                                                                                                                       | `https://app-find/api`                                  |
 | FIND_API_TIMEOUT                                | Find API timeout                                                                                                                  | 30                                                      |
+| LEGIFRANCE_TOOLS_ENABLED                        | Enable the Legifrance/Judilibre tool suite (feature flag)                                                                         | false                                                   |
+| LEGIFRANCE_API_BASE_URL                         | Base URL for the Legifrance API                                                                                                   | https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app |
+| LEGIFRANCE_OAUTH_URL                            | OAuth token endpoint for Legifrance API authentication                                                                            | https://sandbox-oauth.piste.gouv.fr/api/oauth/token     |
+| LEGIFRANCE_CLIENT_ID                            | OAuth client ID for Legifrance API                                                                                                |                                                         |
+| LEGIFRANCE_CLIENT_SECRET                        | OAuth client secret for Legifrance API                                                                                            |                                                         |
+| LEGIFRANCE_API_TOKEN                            | Static API token for Legifrance (alternative to OAuth)                                                                            |                                                         |
+| LEGIFRANCE_OAUTH_HOST                           | OAuth host override for Legifrance                                                                                                |                                                         |
+| LEGIFRANCE_API_HOST                             | API host override for Legifrance                                                                                                  |                                                         |
+| LEGIFRANCE_SSL_VERIFY                           | Enable SSL verification for Legifrance API calls                                                                                  | true                                                    |
 
 
 ## conversations-frontend image
