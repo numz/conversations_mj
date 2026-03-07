@@ -696,6 +696,18 @@ class Base(BraveSettings, Configuration):
         environ_prefix=None,
     )
 
+    # MCP Tools — when enabled, bypasses all local tools and loads them from MCP server(s)
+    MCP_TOOLS_ENABLED = values.BooleanValue(
+        default=False,
+        environ_name="MCP_TOOLS_ENABLED",
+        environ_prefix=None,
+    )
+    MCP_SERVERS_CONFIG = values.DictValue(
+        default={},
+        environ_name="MCP_SERVERS_CONFIG",
+        environ_prefix=None,
+    )
+
     # Uploaded files
     RAG_FILES_ACCEPTED_FORMATS = values.ListValue(
         default=[

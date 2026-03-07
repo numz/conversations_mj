@@ -184,7 +184,14 @@ class BaseAgent(Agent):
         return self.configuration.system_prompt
 
     def get_tools(self) -> list | None:
-        """Override this method to customize tools."""
+        """Override this method to customize tools.
+
+        When MCP_TOOLS_ENABLED is True, no local tools are loaded — all tools
+        come from MCP server(s) via toolsets instead.
+        """
+        if getattr(settings, "MCP_TOOLS_ENABLED", False):
+            logger.info("MCP tools enabled — skipping local tool registration")
+            return []
         if not self.configuration.tools:
             return []
         return [get_pydantic_tools_by_name(tool_name) for tool_name in self.configuration.tools]
