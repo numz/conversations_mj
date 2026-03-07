@@ -17,7 +17,11 @@
         "JlXRUC/HwTscPIXf/iklq/tjb/gHAdxkCUjAg2QAAAABJRU5ErkJggg=="
       ],
       "system_prompt": "settings.AI_AGENT_INSTRUCTIONS",
-      "tools": "settings.AI_AGENT_TOOLS"
+      "tools": "settings.AI_AGENT_TOOLS",
+      "tool_instructions": {
+        "_default": "CRITICAL: Do NOT narrate your intention to use a tool. If you decide to use a tool, output the tool call JSON IMMEDIATELY without preamble.\n\n## No hallucination\nNEVER cite a court decision, article, or legal text without retrieving it via Legifrance tools first. If no results, say so clearly.\n\n## Trust results\nTool results are authoritative. Don't assume you know content before retrieving it.\n\n## Tip\nIf searching by article number gives irrelevant results, try searching by topic/keywords instead.",
+        "legifrance_*": "Always cite sources with URLs."
+      }
     },
     {
       "hrid": "default-summarization-model",
@@ -39,5 +43,23 @@
       "api_key": "settings.AI_API_KEY",
       "kind": "openai"
     }
-  ]
+  ],
+  "tool_display_names": {
+    "summarize": "Résumé du document...",
+    "analyze_documents": "Analyse des documents...",
+    "list_documents": "Liste des documents...",
+    "legifrance_search_codes_lois": "Recherche Légifrance (Codes et Lois)...",
+    "legifrance_search_jurisprudence": "Recherche Légifrance (Jurisprudence)...",
+    "legifrance_search_conventions": "Recherche Légifrance (Conventions)...",
+    "legifrance_search_admin": "Recherche Légifrance (Textes administratifs)...",
+    "legifrance_get_document": "Récupération document Légifrance...",
+    "legifrance_list_codes": "Liste des codes Légifrance...",
+    "legifrance_search_code_article_by_number": "Recherche article par numéro...",
+    "judilibre_search": "Recherche Judilibre...",
+    "judilibre_get_decision": "Récupération décision Judilibre...",
+    "document_search_rag": "Recherche dans les documents...",
+    "web_search": "Recherche sur le web...",
+    "web_search_brave": "Recherche sur le web...",
+    "web_search_brave_with_document_backend": "Recherche sur le web..."
+  }
 }
