@@ -997,9 +997,15 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
                         )
                 elif isinstance(event, FunctionToolResultEvent):
                     if isinstance(event.result, ToolReturnPart):
-                        if event.result.metadata and (
-                            sources := event.result.metadata.get("sources")
-                        ):
+                        # Extract sources from metadata (local tools) or from
+                        # content (MCP tools return sources inside the content dict)
+                        sources = None
+                        if event.result.metadata:
+                            sources = event.result.metadata.get("sources")
+                        if not sources and isinstance(event.result.content, dict):
+                            sources = event.result.content.get("sources")
+
+                        if sources:
                             # sources can be a dict {url: title} or a set/list of urls
                             if isinstance(sources, dict):
                                 source_items = sources.items()
