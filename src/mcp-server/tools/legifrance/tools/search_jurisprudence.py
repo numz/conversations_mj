@@ -66,6 +66,31 @@ def _extract_french_date(text: str) -> str | None:
     return None
 
 
+def _normalize_juridiction(value: str) -> str:
+    """Normalize juridiction values that LLMs may send with typos or partial names."""
+    v = value.strip().upper()
+    # Direct match
+    valid = {JURIDICTION_JUDICIAIRE, JURIDICTION_ADMINISTRATIF,
+             JURIDICTION_CONSTITUTIONNEL, JURIDICTION_FINANCIER}
+    if v in valid:
+        return v
+    # Fuzzy: match by prefix/substring
+    for candidate in valid:
+        if candidate.startswith(v) or v.startswith(candidate[:5]):
+            return candidate
+    # Common LLM mistakes
+    if "JUDIC" in v or "CASS" in v or "APPEL" in v:
+        return JURIDICTION_JUDICIAIRE
+    if "ADMIN" in v or "CONSEIL" in v:
+        return JURIDICTION_ADMINISTRATIF
+    if "CONSTIT" in v:
+        return JURIDICTION_CONSTITUTIONNEL
+    if "FINANC" in v or "COMPT" in v:
+        return JURIDICTION_FINANCIER
+    # Default
+    return JURIDICTION_JUDICIAIRE
+
+
 async def legifrance_search_jurisprudence(
     query: str,
     date: str | None = None,
@@ -98,6 +123,13 @@ async def legifrance_search_jurisprudence(
             date_start = None
         if date_end and str(date_end).strip().lower() in ("null", "none", ""):
             date_end = None
+
+        # If date_start/date_end are provided alongside date, prefer the range
+        if (date_start or date_end) and date:
+            date = None
+
+        # Normalize juridiction — LLMs may send partial/wrong values
+        juridiction = _normalize_juridiction(juridiction)
 
         # Validate input parameters
         try:
