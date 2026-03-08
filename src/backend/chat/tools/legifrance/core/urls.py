@@ -42,6 +42,16 @@ from ..constants import (
 )
 
 
+def _clean_id(rid: str) -> str:
+    """Strip version date suffix from Legifrance IDs (e.g. _01-01-2999)."""
+    idx = rid.find("_")
+    if idx > 0:
+        suffix = rid[idx + 1:]
+        if len(suffix) == 10 and suffix[2] == "-" and suffix[5] == "-":
+            return rid[:idx]
+    return rid
+
+
 def get_legifrance_url(rid: str, fond: str) -> str:
     """
     Generate Legifrance UI URL based on ID and Fond.
@@ -55,6 +65,9 @@ def get_legifrance_url(rid: str, fond: str) -> str:
     """
     if not rid:
         return ""
+
+    # Strip version date suffix (e.g. _01-01-2999)
+    rid = _clean_id(rid)
 
     # Check by ID prefix first (more specific)
     if rid.startswith(ID_PREFIX_LEGIARTI):
