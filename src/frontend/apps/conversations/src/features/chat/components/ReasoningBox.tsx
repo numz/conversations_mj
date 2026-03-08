@@ -1,4 +1,3 @@
-import { ToolInvocation } from '@ai-sdk/ui-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -113,16 +112,22 @@ export const ReasoningBox = ({
   const isProcessing = Boolean(processingLabel);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
-  const hasContent = Boolean(reasoning);
   const showToolTags =
     featureFlags.tool_call_tags_enabled && toolCalls && toolCalls.length > 0;
+  const hasContent = Boolean(reasoning) || showToolTags;
 
   // Get the last line of reasoning for collapsed preview
   const lastLine = useMemo(() => {
     const lines = reasoning.trim().split('\n').filter(Boolean);
     const last = lines[lines.length - 1] || '';
-    return last.length > 100 ? last.substring(0, 100) + '...' : last;
-  }, [reasoning]);
+    if (last) {
+      return last.length > 100 ? last.substring(0, 100) + '...' : last;
+    }
+    if (showToolTags && toolCalls) {
+      return `${toolCalls.length} tool(s)`;
+    }
+    return '';
+  }, [reasoning, showToolTags, toolCalls]);
 
   // Auto-collapse when streaming ends
   useEffect(() => {
@@ -245,25 +250,7 @@ export const ReasoningBox = ({
         )}
       </Box>
 
-      {/* Tool call tags */}
-      {showToolTags && (
-        <Box
-          $direction="row"
-          $gap="6px"
-          $padding={{ horizontal: 'sm', vertical: 'xs' }}
-          $background="var(--c--contextuals--background--semantic--neutral--tertiary)"
-          $css={`
-            flex-wrap: wrap;
-            ${hasContent && isExpanded ? '' : !hasContent ? 'border-radius: 0 0 var(--c--components--forms-field--border-radius--m) var(--c--components--forms-field--border-radius--m);' : ''}
-          `}
-        >
-          {toolCalls.map((entry) => (
-            <ToolCallTag key={entry.toolName} entry={entry} />
-          ))}
-        </Box>
-      )}
-
-      {/* Content - collapsible */}
+      {/* Content - collapsible (reasoning text + tool tags) */}
       {hasContent && (
         <Box
           id="reasoning-content"
@@ -277,7 +264,7 @@ export const ReasoningBox = ({
             line-height: 1.5;
             white-space: pre-wrap;
             word-break: break-word;
-            max-height: ${isExpanded ? '300px' : '0'};
+            max-height: ${isExpanded ? '400px' : '0'};
             overflow-y: ${isExpanded ? 'auto' : 'hidden'};
             opacity: ${isExpanded ? '1' : '0'};
             padding-top: ${isExpanded ? 'var(--c--theme--spacings--xs)' : '0'};
@@ -286,6 +273,18 @@ export const ReasoningBox = ({
           `}
         >
           {reasoning}
+          {showToolTags && (
+            <Box
+              $direction="row"
+              $gap="6px"
+              $padding={{ top: 'xs' }}
+              $css="flex-wrap: wrap; white-space: normal;"
+            >
+              {toolCalls.map((entry) => (
+                <ToolCallTag key={entry.toolName} entry={entry} />
+              ))}
+            </Box>
+          )}
         </Box>
       )}
     </Box>
