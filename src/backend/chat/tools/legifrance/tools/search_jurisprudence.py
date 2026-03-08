@@ -38,6 +38,7 @@ from ..core import (
     legifrance_search_core,
     validate_input,
 )
+from ..core.query_fallback import simplify_query
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,25 @@ async def legifrance_search_jurisprudence(
             filtres=filtres,
             sort=api_sort,
         )
+
+        # Fallback: if no results and query can be simplified, retry once
+        if not raw_results:
+            simplified = simplify_query(query)
+            if simplified:
+                logger.info(
+                    "No results for '%s', retrying with simplified query '%s'",
+                    query,
+                    simplified,
+                )
+                fallback_criteres = build_default_criteria(simplified)
+                raw_results = await legifrance_search_core(
+                    ctx=ctx,
+                    query=simplified,
+                    fond=fond,
+                    criteres=fallback_criteres,
+                    filtres=filtres,
+                    sort=api_sort,
+                )
 
         # Build output
         output = []
