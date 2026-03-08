@@ -53,13 +53,19 @@ async def legifrance_search_admin(
     """
     Recherche dans le Journal Officiel (JORF), Circulaires (CIRC) et CNIL.
 
+    Utilise cet outil pour les textes administratifs, décrets, ordonnances,
+    arrêtés, circulaires et délibérations CNIL.
+
+    💡 Pour les textes constitutionnels (Constitution de 1958, révisions),
+    cherche dans JORF avec des mots-clés comme "Constitution", "révision constitutionnelle".
+
     Args:
         ctx: The run context.
-        query: Mots-clés de recherche.
-        source: Source de recherche (JORF, CIRC, CNIL).
-        date: Date de publication/délibération (YYYY-MM-DD).
-        nor: Numéro NOR du document.
-        nature_delib: Nature de la délibération (pour CNIL).
+        query: Mots-clés courts (2-4 mots). Ex: "dissolution assemblée", "décret préfet".
+        source: JORF (Journal Officiel), CIRC (Circulaires) ou CNIL.
+        date: Date de publication/délibération (YYYY-MM-DD). Optionnel.
+        nor: Numéro NOR du document (si connu).
+        nature_delib: Nature de la délibération (pour CNIL uniquement).
 
     Returns:
         ToolReturn with formatted results and metadata.

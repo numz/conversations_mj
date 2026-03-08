@@ -56,20 +56,22 @@ async def legifrance_search_jurisprudence(
 
     ⚠️ QUAND UTILISER CET OUTIL vs judilibre_search :
     - Utilisez LEGIFRANCE pour : Conseil d'État (ADMINISTRATIF), Conseil constitutionnel (QPC),
-      Cour des comptes (FINANCIER), ou recherche multi-juridictions
+      Cour des comptes (FINANCIER), ou recherche multi-juridictions.
     - Utilisez JUDILIBRE pour : Cour de cassation, Cours d'appel, Tribunaux judiciaires
-      (Judilibre offre des données plus riches pour le droit privé/travail)
+      (Judilibre offre des données plus riches pour le droit privé/travail).
 
-    Cet outil couvre la jurisprudence administrative, constitutionnelle et financière
-    qui n'est PAS disponible dans Judilibre.
+    IMPORTANT pour la requête :
+    - Utilise des mots-clés COURTS (2-4 mots). NE PAS écrire de phrases longues.
+    - NE PAS mettre de guillemets dans la requête.
+    - Si tu cherches une décision précise, utilise le paramètre numero_decision.
 
     Args:
         ctx: The run context.
-        query: Mots-clés de recherche.
-        date: Date de la décision (YYYY-MM-DD).
-        juridiction: Type de juridiction (JUDICIAIRE, ADMINISTRATIF, CONSTITUTIONNEL, FINANCIER).
-        numero_decision: Numéro de la décision.
-        sort: Ordre de tri (PERTINENCE, DATE_DESC, DATE_ASC).
+        query: Mots-clés courts (2-4 mots). Ex: "responsabilité gardien chose", "QPC IVG".
+        date: Date de la décision (YYYY-MM-DD). Optionnel.
+        juridiction: JUDICIAIRE, ADMINISTRATIF, CONSTITUTIONNEL ou FINANCIER.
+        numero_decision: Numéro de la décision (si connu).
+        sort: PERTINENCE, DATE_DESC ou DATE_ASC.
 
     Returns:
         ToolReturn with formatted results and metadata.
