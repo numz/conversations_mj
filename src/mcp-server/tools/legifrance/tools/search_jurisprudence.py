@@ -131,7 +131,29 @@ async def legifrance_search_jurisprudence(
                 if r.juridiction:
                     meta.append(f"Jur: {r.juridiction}")
 
-                date_dec = r.raw.get("date") or r.raw.get("dateDecision")
+                # Extract decision date — may be a string or a timestamp (ms)
+                date_dec = (
+                    r.raw.get("dateDecision")
+                    or r.raw.get("date")
+                    or r.raw.get("dateTexte")
+                )
+                # Also check inside titles (common in search results)
+                if not date_dec and r.raw.get("titles"):
+                    titles = r.raw["titles"]
+                    if isinstance(titles, list) and titles:
+                        date_dec = titles[0].get("dateDecision") or titles[0].get("date")
+                # Fallback: relevantDate (always a timestamp)
+                if not date_dec:
+                    date_dec = r.raw.get("relevantDate")
+
+                # Convert timestamp (ms) to readable date
+                if date_dec and isinstance(date_dec, (int, float)):
+                    try:
+                        dt = datetime.datetime.fromtimestamp(date_dec / 1000)
+                        date_dec = dt.strftime("%Y-%m-%d")
+                    except (ValueError, TypeError, OSError):
+                        date_dec = None
+
                 if date_dec:
                     meta.append(f"Date: {date_dec}")
 
