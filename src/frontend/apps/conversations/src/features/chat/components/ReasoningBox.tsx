@@ -9,6 +9,7 @@ interface ToolCallEntry {
   toolName: string;
   displayName: string;
   state: string;
+  args?: Record<string, unknown>;
   result?: unknown;
 }
 
@@ -22,9 +23,26 @@ interface ReasoningBoxProps {
 }
 
 /**
+ * Format tool arguments as a short readable string for the tag header.
+ * Example: query="licenciement abusif", juridiction="JUDICIAIRE"
+ */
+const formatArgs = (args?: Record<string, unknown>): string => {
+  if (!args || Object.keys(args).length === 0) {
+    return '';
+  }
+  return Object.entries(args)
+    .filter(([, v]) => v != null && v !== '')
+    .map(([k, v]) => {
+      const val = typeof v === 'string' ? v : JSON.stringify(v);
+      const short = val.length > 40 ? val.substring(0, 37) + '...' : val;
+      return `${k}="${short}"`;
+    })
+    .join(', ');
+};
+
+/**
  * Extract a human-readable string from a tool result.
  * MCP tools typically return {results: string, title?, date?, url?, ...}.
- * We display the `results` field directly, with optional title/date header.
  */
 const formatToolResult = (result: unknown): string => {
   if (typeof result === 'string') {
@@ -34,14 +52,12 @@ const formatToolResult = (result: unknown): string => {
     const obj = result as Record<string, unknown>;
     const parts: string[] = [];
 
-    // Title + date header
     if (obj.title) {
       parts.push(
         obj.date ? `${obj.title} (${obj.date})` : String(obj.title),
       );
     }
 
-    // Main content
     if (typeof obj.results === 'string') {
       parts.push(obj.results);
     } else if (obj.results != null) {
@@ -62,9 +78,10 @@ const ToolCallTag = ({
 }) => {
   const [showResult, setShowResult] = useState(false);
   const hasResult = entry.state === 'result' && entry.result != null;
+  const argsStr = formatArgs(entry.args);
 
   return (
-    <Box $css="display: inline-flex; flex-direction: column; margin: 2px 0;">
+    <Box $css="display: inline-flex; flex-direction: column; margin: 2px 0; white-space: normal;">
       <Box
         $direction="row"
         $align="center"
@@ -89,6 +106,11 @@ const ToolCallTag = ({
         <Text $css="color: inherit; font-size: inherit; font-weight: inherit;">
           {entry.displayName}
         </Text>
+        {showResult && argsStr && (
+          <Text $css="color: rgba(255,255,255,0.75); font-size: inherit; font-weight: 400;">
+            ({argsStr})
+          </Text>
+        )}
         {entry.state !== 'result' && (
           <Box $css="display: flex; align-items: center; transform: scale(0.5);">
             <Loader />

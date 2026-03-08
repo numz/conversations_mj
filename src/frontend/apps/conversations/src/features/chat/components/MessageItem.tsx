@@ -267,6 +267,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
             toolDisplayNames['_default'] ||
             inv.toolName,
           state: inv.state,
+          args: inv.args as Record<string, unknown> | undefined,
           result: inv.state === 'result' ? inv.result : undefined,
         };
       });
