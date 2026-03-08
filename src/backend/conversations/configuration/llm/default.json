@@ -59,6 +59,19 @@
     "document_search_rag": "Recherche dans les documents...",
     "web_search": "Recherche sur le web...",
     "web_search_brave": "Recherche sur le web...",
-    "web_search_brave_with_document_backend": "Recherche sur le web..."
+    "web_search_brave_with_document_backend": "Recherche sur le web...",
+    "document_list": "Liste des documents...",
+    "document_get_content": "Lecture du document...",
+    "document_analyze": "Analyse des documents...",
+    "document_summarize": "Résumé du document...",
+    "mcp_legifrance_search_codes_lois": "Recherche Légifrance (Codes et Lois)...",
+    "mcp_legifrance_search_jurisprudence": "Recherche Légifrance (Jurisprudence)...",
+    "mcp_legifrance_search_conventions": "Recherche Légifrance (Conventions)...",
+    "mcp_legifrance_search_admin": "Recherche Légifrance (Textes administratifs)...",
+    "mcp_legifrance_get_document": "Récupération document Légifrance...",
+    "mcp_legifrance_search_code_article_by_number": "Recherche article par numéro...",
+    "mcp_legifrance_list_codes": "Liste des codes Légifrance...",
+    "mcp_judilibre_search": "Recherche Judilibre...",
+    "mcp_judilibre_get_decision": "Récupération décision Judilibre..."
   }
 }
