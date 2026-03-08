@@ -1190,6 +1190,10 @@ USER QUESTION:
         default=True, environ_name="ENABLE_TABLE_DESIGN", environ_prefix=None
     )
 
+    TOOL_CALL_TAGS_ENABLED = values.BooleanValue(
+        default=False, environ_name="TOOL_CALL_TAGS_ENABLED", environ_prefix=None
+    )
+
     # Default keepalive interval: 55s (safely below typical 60s proxy timeouts)
     # Prevents connection drops during long stream pauses while providing 5s safety margin.
     KEEPALIVE_INTERVAL = values.PositiveIntegerValue(

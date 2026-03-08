@@ -251,6 +251,27 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     return tool?.toolInvocation;
   }, [toolInvocationParts]);
 
+  // Build tool call entries for ReasoningBox tags
+  const toolCallEntries = React.useMemo(() => {
+    if (!featureFlags.tool_call_tags_enabled) {
+      return [];
+    }
+    return toolInvocationParts
+      .filter((part) => part.toolInvocation.toolName !== 'document_parsing')
+      .map((part) => {
+        const inv = part.toolInvocation;
+        return {
+          toolName: inv.toolCallId,
+          displayName:
+            toolDisplayNames[inv.toolName] ||
+            toolDisplayNames['_default'] ||
+            inv.toolName,
+          state: inv.state,
+          result: inv.state === 'result' ? inv.result : undefined,
+        };
+      });
+  }, [toolInvocationParts, toolDisplayNames, featureFlags.tool_call_tags_enabled]);
+
   // Reasoning box content
   const reasoningContent = React.useMemo(() => {
     const reasoningParts = message.parts?.filter(
@@ -289,6 +310,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
         reasoning={combinedReasoning || ''}
         isStreaming={isCurrentlyStreaming && isLastAssistantMessage}
         processingLabel={processingLabel}
+        toolCalls={toolCallEntries}
       />
     );
   }, [
@@ -297,6 +319,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
     isCurrentlyStreaming,
     isLastAssistantMessage,
     toolDisplayNames,
+    toolCallEntries,
     t,
   ]);
 

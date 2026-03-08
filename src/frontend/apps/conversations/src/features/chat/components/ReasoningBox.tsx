@@ -1,3 +1,4 @@
+import { ToolInvocation } from '@ai-sdk/ui-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -5,12 +6,94 @@ import { Box, Icon, Text } from '@/components';
 import { Loader } from '@/components/Loader';
 import { useFeatureFlags } from '@/core/config/api';
 
+interface ToolCallEntry {
+  toolName: string;
+  displayName: string;
+  state: string;
+  result?: unknown;
+}
+
 interface ReasoningBoxProps {
   reasoning: string;
   isStreaming: boolean;
   /** Label to show during processing (e.g., "Thinking..."). When set, replaces the header icon and "Reasoning" text */
   processingLabel?: string | null;
+  /** Tool invocations to display as tags (requires tool_call_tags_enabled feature flag) */
+  toolCalls?: ToolCallEntry[];
 }
+
+const ToolCallTag = ({
+  entry,
+}: {
+  entry: ToolCallEntry;
+}) => {
+  const [showResult, setShowResult] = useState(false);
+  const hasResult = entry.state === 'result' && entry.result != null;
+
+  return (
+    <Box $css="display: inline-flex; flex-direction: column; margin: 2px 0;">
+      <Box
+        $direction="row"
+        $align="center"
+        $gap="4px"
+        $css={`
+          display: inline-flex;
+          background: #d32f2f;
+          color: #fff;
+          border-radius: 4px;
+          padding: 2px 8px;
+          font-size: 0.75em;
+          font-weight: 600;
+          cursor: ${hasResult ? 'pointer' : 'default'};
+          user-select: none;
+          transition: background 0.15s ease;
+          &:hover {
+            background: ${hasResult ? '#b71c1c' : '#d32f2f'};
+          }
+        `}
+        onClick={hasResult ? () => setShowResult((prev) => !prev) : undefined}
+      >
+        <Text $css="color: inherit; font-size: inherit; font-weight: inherit;">
+          {entry.displayName}
+        </Text>
+        {entry.state !== 'result' && (
+          <Box $css="display: flex; align-items: center; transform: scale(0.5);">
+            <Loader />
+          </Box>
+        )}
+        {hasResult && (
+          <Icon
+            iconName={showResult ? 'expand_less' : 'expand_more'}
+            $size="14px"
+            $css="color: #fff;"
+          />
+        )}
+      </Box>
+      {showResult && hasResult && (
+        <Box
+          $css={`
+            background: var(--c--contextuals--background--semantic--neutral--quaternary, #f5f5f5);
+            border: 1px solid var(--c--contextuals--border--semantic--neutral--default, #e0e0e0);
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 4px;
+            font-size: 0.75em;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            color: var(--c--contextuals--content--semantic--neutral--secondary);
+          `}
+        >
+          {typeof entry.result === 'string'
+            ? entry.result
+            : JSON.stringify(entry.result, null, 2)}
+        </Box>
+      )}
+    </Box>
+  );
+};
 
 /**
  * Collapsible reasoning/thinking box component.
@@ -23,6 +106,7 @@ export const ReasoningBox = ({
   reasoning,
   isStreaming,
   processingLabel,
+  toolCalls,
 }: ReasoningBoxProps) => {
   const { t } = useTranslation();
   const featureFlags = useFeatureFlags();
@@ -30,6 +114,8 @@ export const ReasoningBox = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
   const hasContent = Boolean(reasoning);
+  const showToolTags =
+    featureFlags.tool_call_tags_enabled && toolCalls && toolCalls.length > 0;
 
   // Get the last line of reasoning for collapsed preview
   const lastLine = useMemo(() => {
@@ -158,6 +244,24 @@ export const ReasoningBox = ({
           </Box>
         )}
       </Box>
+
+      {/* Tool call tags */}
+      {showToolTags && (
+        <Box
+          $direction="row"
+          $gap="6px"
+          $padding={{ horizontal: 'sm', vertical: 'xs' }}
+          $background="var(--c--contextuals--background--semantic--neutral--tertiary)"
+          $css={`
+            flex-wrap: wrap;
+            ${hasContent && isExpanded ? '' : !hasContent ? 'border-radius: 0 0 var(--c--components--forms-field--border-radius--m) var(--c--components--forms-field--border-radius--m);' : ''}
+          `}
+        >
+          {toolCalls.map((entry) => (
+            <ToolCallTag key={entry.toolName} entry={entry} />
+          ))}
+        </Box>
+      )}
 
       {/* Content - collapsible */}
       {hasContent && (

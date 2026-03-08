@@ -237,6 +237,7 @@ class ConfigView(drf.views.APIView):
             "extended_metrics_enabled": getattr(settings, "EXTENDED_METRICS_ENABLED", False),
             "local_feedback_enabled": getattr(settings, "LOCAL_FEEDBACK_ENABLED", False),
             "enable_table_design": settings.ENABLE_TABLE_DESIGN,
+            "tool_call_tags_enabled": getattr(settings, "TOOL_CALL_TAGS_ENABLED", False),
         }
 
         # Tool display names for human-readable tool labels
