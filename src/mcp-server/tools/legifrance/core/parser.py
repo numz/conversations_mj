@@ -228,7 +228,8 @@ def format_result_item(
     if extra_meta is None:
         extra_meta = []
 
-    rid = r.id
+    from .urls import _clean_id
+    rid = _clean_id(r.id)
     url = get_legifrance_url(rid, fond)
 
     title = r.title or ARTICLE_TITLE_FALLBACK
