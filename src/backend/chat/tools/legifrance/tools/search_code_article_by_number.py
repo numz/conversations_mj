@@ -15,6 +15,7 @@ from chat.tools.utils import last_model_retry_soft_fail
 from ..api import LegifranceAPI
 from ..constants import FOND_CODE_DATE
 from ..core import SearchCodeArticleInput, build_source_with_title, validate_input
+from ..core.code_name_validator import validate_code_name
 from ..exceptions import (
     LegifranceAPIError,
     LegifranceRateLimitError,
@@ -56,6 +57,12 @@ async def legifrance_search_code_article_by_number(
             )
             code_name = validated.code_name
             article_num = validated.article_num
+        except ValueError as e:
+            raise ModelCannotRetry(str(e)) from e
+
+        # Validate code_name against real Legifrance code list
+        try:
+            code_name = await validate_code_name(code_name)
         except ValueError as e:
             raise ModelCannotRetry(str(e)) from e
 

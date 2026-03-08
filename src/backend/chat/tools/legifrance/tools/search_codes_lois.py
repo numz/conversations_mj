@@ -46,6 +46,7 @@ from ..core import (
     legifrance_search_core,
     validate_input,
 )
+from ..core.code_name_validator import validate_code_name
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,13 @@ async def legifrance_search_codes_lois(
             date = validated.date
         except ValueError as e:
             raise ModelCannotRetry(str(e)) from e
+
+        # Validate code_name against real Legifrance code list (CODE only)
+        if code_name and type_source in (TYPE_SOURCE_CODE, TYPE_SOURCE_CODE_DATE):
+            try:
+                code_name = await validate_code_name(code_name)
+            except ValueError as e:
+                raise ModelCannotRetry(str(e)) from e
 
         # Heuristic: Check if query is typically an article lookup
         match = re.match(r"^\s*(?:article|art\.?)\s+([LRDA]?\s*[\d\.-]+)\s*$", query, re.IGNORECASE)
