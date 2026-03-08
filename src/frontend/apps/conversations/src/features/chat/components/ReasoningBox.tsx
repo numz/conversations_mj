@@ -21,6 +21,40 @@ interface ReasoningBoxProps {
   toolCalls?: ToolCallEntry[];
 }
 
+/**
+ * Extract a human-readable string from a tool result.
+ * MCP tools typically return {results: string, title?, date?, url?, ...}.
+ * We display the `results` field directly, with optional title/date header.
+ */
+const formatToolResult = (result: unknown): string => {
+  if (typeof result === 'string') {
+    return result;
+  }
+  if (result && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    const parts: string[] = [];
+
+    // Title + date header
+    if (obj.title) {
+      parts.push(
+        obj.date ? `${obj.title} (${obj.date})` : String(obj.title),
+      );
+    }
+
+    // Main content
+    if (typeof obj.results === 'string') {
+      parts.push(obj.results);
+    } else if (obj.results != null) {
+      parts.push(JSON.stringify(obj.results, null, 2));
+    }
+
+    if (parts.length > 0) {
+      return parts.join('\n\n');
+    }
+  }
+  return JSON.stringify(result, null, 2);
+};
+
 const ToolCallTag = ({
   entry,
 }: {
@@ -73,21 +107,19 @@ const ToolCallTag = ({
           $css={`
             background: var(--c--contextuals--background--semantic--neutral--quaternary, #f5f5f5);
             border: 1px solid var(--c--contextuals--border--semantic--neutral--default, #e0e0e0);
-            border-radius: 4px;
-            padding: 8px;
+            border-radius: 6px;
+            padding: 10px 12px;
             margin-top: 4px;
-            font-size: 0.75em;
-            line-height: 1.4;
+            font-size: 0.8em;
+            line-height: 1.6;
             white-space: pre-wrap;
             word-break: break-word;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
-            color: var(--c--contextuals--content--semantic--neutral--secondary);
+            color: var(--c--contextuals--content--semantic--neutral--primary);
           `}
         >
-          {typeof entry.result === 'string'
-            ? entry.result
-            : JSON.stringify(entry.result, null, 2)}
+          {formatToolResult(entry.result)}
         </Box>
       )}
     </Box>
