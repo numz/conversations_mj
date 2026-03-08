@@ -1,4 +1,3 @@
-import { ToolInvocation } from '@ai-sdk/ui-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,6 +9,7 @@ interface ToolCallEntry {
   toolName: string;
   displayName: string;
   state: string;
+  args?: Record<string, unknown>;
   result?: unknown;
 }
 
@@ -22,6 +22,55 @@ interface ReasoningBoxProps {
   toolCalls?: ToolCallEntry[];
 }
 
+/**
+ * Format tool arguments as a short readable string for the tag header.
+ * Example: query="licenciement abusif", juridiction="JUDICIAIRE"
+ */
+const formatArgs = (args?: Record<string, unknown>): string => {
+  if (!args || Object.keys(args).length === 0) {
+    return '';
+  }
+  return Object.entries(args)
+    .filter(([, v]) => v != null && v !== '')
+    .map(([k, v]) => {
+      const val = typeof v === 'string' ? v : JSON.stringify(v);
+      const short = val.length > 40 ? val.substring(0, 37) + '...' : val;
+      return `${k}="${short}"`;
+    })
+    .join(', ');
+};
+
+/**
+ * Extract a human-readable string from a tool result.
+ * MCP tools typically return {results: string, title?, date?, url?, ...}.
+ */
+const formatToolResult = (result: unknown): string => {
+  if (typeof result === 'string') {
+    return result;
+  }
+  if (result && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    const parts: string[] = [];
+
+    if (obj.title) {
+      parts.push(
+        obj.date ? `${obj.title} (${obj.date})` : String(obj.title),
+      );
+    }
+
+    if (typeof obj.results === 'string') {
+      parts.push(obj.results);
+    } else if (obj.results != null) {
+      parts.push(JSON.stringify(obj.results, null, 2));
+    }
+
+    if (parts.length > 0) {
+      return parts.join('\n\n');
+    }
+  }
+  return JSON.stringify(result, null, 2);
+};
+
 const ToolCallTag = ({
   entry,
 }: {
@@ -29,9 +78,10 @@ const ToolCallTag = ({
 }) => {
   const [showResult, setShowResult] = useState(false);
   const hasResult = entry.state === 'result' && entry.result != null;
+  const argsStr = formatArgs(entry.args);
 
   return (
-    <Box $css="display: inline-flex; flex-direction: column; margin: 2px 0;">
+    <Box $css="display: inline-flex; flex-direction: column; margin: 2px 0; white-space: normal;">
       <Box
         $direction="row"
         $align="center"
@@ -56,6 +106,11 @@ const ToolCallTag = ({
         <Text $css="color: inherit; font-size: inherit; font-weight: inherit;">
           {entry.displayName}
         </Text>
+        {showResult && argsStr && (
+          <Text $css="color: rgba(255,255,255,0.75); font-size: inherit; font-weight: 400;">
+            ({argsStr})
+          </Text>
+        )}
         {entry.state !== 'result' && (
           <Box $css="display: flex; align-items: center; transform: scale(0.5);">
             <Loader />
@@ -72,23 +127,23 @@ const ToolCallTag = ({
       {showResult && hasResult && (
         <Box
           $css={`
-            background: var(--c--contextuals--background--semantic--neutral--quaternary, #f5f5f5);
-            border: 1px solid var(--c--contextuals--border--semantic--neutral--default, #e0e0e0);
-            border-radius: 4px;
-            padding: 8px;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px 12px;
             margin-top: 4px;
-            font-size: 0.75em;
-            line-height: 1.4;
+            font-size: 0.85em;
+            line-height: 1.6;
             white-space: pre-wrap;
             word-break: break-word;
-            max-height: 200px;
+            overflow-wrap: anywhere;
+            max-height: 250px;
             overflow-y: auto;
+            overflow-x: hidden;
             color: var(--c--contextuals--content--semantic--neutral--secondary);
           `}
         >
-          {typeof entry.result === 'string'
-            ? entry.result
-            : JSON.stringify(entry.result, null, 2)}
+          {formatToolResult(entry.result)}
         </Box>
       )}
     </Box>
@@ -113,16 +168,22 @@ export const ReasoningBox = ({
   const isProcessing = Boolean(processingLabel);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
-  const hasContent = Boolean(reasoning);
   const showToolTags =
     featureFlags.tool_call_tags_enabled && toolCalls && toolCalls.length > 0;
+  const hasContent = Boolean(reasoning) || showToolTags;
 
   // Get the last line of reasoning for collapsed preview
   const lastLine = useMemo(() => {
     const lines = reasoning.trim().split('\n').filter(Boolean);
     const last = lines[lines.length - 1] || '';
-    return last.length > 100 ? last.substring(0, 100) + '...' : last;
-  }, [reasoning]);
+    if (last) {
+      return last.length > 100 ? last.substring(0, 100) + '...' : last;
+    }
+    if (showToolTags && toolCalls) {
+      return `${toolCalls.length} tool(s)`;
+    }
+    return '';
+  }, [reasoning, showToolTags, toolCalls]);
 
   // Auto-collapse when streaming ends
   useEffect(() => {
@@ -245,25 +306,7 @@ export const ReasoningBox = ({
         )}
       </Box>
 
-      {/* Tool call tags */}
-      {showToolTags && (
-        <Box
-          $direction="row"
-          $gap="6px"
-          $padding={{ horizontal: 'sm', vertical: 'xs' }}
-          $background="var(--c--contextuals--background--semantic--neutral--tertiary)"
-          $css={`
-            flex-wrap: wrap;
-            ${hasContent && isExpanded ? '' : !hasContent ? 'border-radius: 0 0 var(--c--components--forms-field--border-radius--m) var(--c--components--forms-field--border-radius--m);' : ''}
-          `}
-        >
-          {toolCalls.map((entry) => (
-            <ToolCallTag key={entry.toolName} entry={entry} />
-          ))}
-        </Box>
-      )}
-
-      {/* Content - collapsible */}
+      {/* Content - collapsible (reasoning text + tool tags) */}
       {hasContent && (
         <Box
           id="reasoning-content"
@@ -277,7 +320,7 @@ export const ReasoningBox = ({
             line-height: 1.5;
             white-space: pre-wrap;
             word-break: break-word;
-            max-height: ${isExpanded ? '300px' : '0'};
+            max-height: ${isExpanded ? '400px' : '0'};
             overflow-y: ${isExpanded ? 'auto' : 'hidden'};
             opacity: ${isExpanded ? '1' : '0'};
             padding-top: ${isExpanded ? 'var(--c--theme--spacings--xs)' : '0'};
@@ -286,6 +329,18 @@ export const ReasoningBox = ({
           `}
         >
           {reasoning}
+          {showToolTags && (
+            <Box
+              $direction="row"
+              $gap="6px"
+              $padding={{ top: 'xs' }}
+              $css="flex-wrap: wrap; white-space: normal;"
+            >
+              {toolCalls.map((entry) => (
+                <ToolCallTag key={entry.toolName} entry={entry} />
+              ))}
+            </Box>
+          )}
         </Box>
       )}
     </Box>
