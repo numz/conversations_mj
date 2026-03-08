@@ -69,6 +69,8 @@ def _extract_french_date(text: str) -> str | None:
 async def legifrance_search_jurisprudence(
     query: str,
     date: str | None = None,
+    date_start: str | None = None,
+    date_end: str | None = None,
     juridiction: str = JURIDICTION_JUDICIAIRE,
     numero_decision: str | None = None,
     sort: str | None = SORT_PERTINENCE,
@@ -78,7 +80,9 @@ async def legifrance_search_jurisprudence(
 
     Args:
         query: Mots-cles de recherche.
-        date: Date de la decision (YYYY-MM-DD).
+        date: Date exacte de la decision (YYYY-MM-DD).
+        date_start: Date de debut de la plage (YYYY-MM-DD).
+        date_end: Date de fin de la plage (YYYY-MM-DD).
         juridiction: Type de juridiction (JUDICIAIRE, ADMINISTRATIF, CONSTITUTIONNEL, FINANCIER).
         numero_decision: Numero de la decision.
         sort: Ordre de tri (PERTINENCE, DATE_DESC, DATE_ASC).
@@ -132,6 +136,25 @@ async def legifrance_search_jurisprudence(
                 filtres.append(SearchFilter(facette=FACET_DATE_DECISION, singleDate=ts))
             except ValueError:
                 logger.warning("Invalid date format: %s", date)
+        elif date_start or date_end:
+            ts_start = None
+            ts_end = None
+            if date_start:
+                try:
+                    ts_start = int(datetime.datetime.strptime(date_start, "%Y-%m-%d").timestamp() * 1000)
+                except ValueError:
+                    logger.warning("Invalid date_start format: %s", date_start)
+            if date_end:
+                try:
+                    ts_end = int(datetime.datetime.strptime(date_end, "%Y-%m-%d").timestamp() * 1000)
+                except ValueError:
+                    logger.warning("Invalid date_end format: %s", date_end)
+            if ts_start is not None or ts_end is not None:
+                filtres.append(SearchFilter(
+                    facette=FACET_DATE_DECISION,
+                    dateStart=ts_start,
+                    dateEnd=ts_end,
+                ))
 
         # Sort mapping
         api_sort = sort or SORT_PERTINENCE

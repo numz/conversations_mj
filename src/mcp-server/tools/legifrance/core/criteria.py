@@ -52,11 +52,13 @@ class SearchField:
 
 @dataclass
 class SearchFilter:
-    """Represents an API filter facet or singleDate."""
+    """Represents an API filter facet, singleDate, or date range."""
 
     facette: str
     valeurs: Optional[list[str]] = None
     singleDate: Optional[int] = None
+    dateStart: Optional[int] = None
+    dateEnd: Optional[int] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to API-compatible dictionary."""
@@ -65,6 +67,13 @@ class SearchFilter:
             d["valeurs"] = self.valeurs
         if self.singleDate is not None:
             d["singleDate"] = self.singleDate
+        if self.dateStart is not None or self.dateEnd is not None:
+            dates: dict[str, int] = {}
+            if self.dateStart is not None:
+                dates["start"] = self.dateStart
+            if self.dateEnd is not None:
+                dates["end"] = self.dateEnd
+            d["dates"] = dates
         return d
 
 
