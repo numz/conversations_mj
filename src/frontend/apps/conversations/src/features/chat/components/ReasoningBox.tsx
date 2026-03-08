@@ -105,18 +105,20 @@ const ToolCallTag = ({
       {showResult && hasResult && (
         <Box
           $css={`
-            background: var(--c--contextuals--background--semantic--neutral--quaternary, #f5f5f5);
-            border: 1px solid var(--c--contextuals--border--semantic--neutral--default, #e0e0e0);
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             padding: 10px 12px;
             margin-top: 4px;
-            font-size: 0.8em;
+            font-size: 0.85em;
             line-height: 1.6;
             white-space: pre-wrap;
             word-break: break-word;
+            overflow-wrap: anywhere;
             max-height: 250px;
             overflow-y: auto;
-            color: var(--c--contextuals--content--semantic--neutral--primary);
+            overflow-x: hidden;
+            color: var(--c--contextuals--content--semantic--neutral--secondary);
           `}
         >
           {formatToolResult(entry.result)}
