@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import re
 from typing import Any
 
 from ..constants import (
@@ -36,6 +37,33 @@ from ..core import (
 )
 
 logger = logging.getLogger(__name__)
+
+# French month names to numeric mapping
+_FRENCH_MONTHS = {
+    "janvier": "01", "février": "02", "mars": "03", "avril": "04",
+    "mai": "05", "juin": "06", "juillet": "07", "août": "08",
+    "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12",
+}
+
+# Pattern: "19 novembre 2013" or "1er janvier 2020"
+_DATE_RE = re.compile(
+    r"(\d{1,2})(?:er)?\s+("
+    + "|".join(_FRENCH_MONTHS.keys())
+    + r")\s+(\d{4})",
+    re.IGNORECASE,
+)
+
+
+def _extract_french_date(text: str) -> str | None:
+    """Extract a date from a French text string like '19 novembre 2013'."""
+    m = _DATE_RE.search(text)
+    if m:
+        day = m.group(1).zfill(2)
+        month = _FRENCH_MONTHS.get(m.group(2).lower())
+        year = m.group(3)
+        if month:
+            return f"{year}-{month}-{day}"
+    return None
 
 
 async def legifrance_search_jurisprudence(
@@ -153,6 +181,11 @@ async def legifrance_search_jurisprudence(
                         date_dec = dt.strftime("%Y-%m-%d")
                     except (ValueError, TypeError, OSError):
                         date_dec = None
+
+                # Last resort: parse French date from title string
+                # e.g. "Cour de cassation, ..., 19 novembre 2013, ..."
+                if not date_dec and r.title:
+                    date_dec = _extract_french_date(r.title)
 
                 if date_dec:
                     meta.append(f"Date: {date_dec}")
