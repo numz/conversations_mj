@@ -51,6 +51,8 @@ def register(mcp: FastMCP) -> None:
     async def mcp_legifrance_search_jurisprudence(
         query: str,
         date: str | None = None,
+        date_start: str | None = None,
+        date_end: str | None = None,
         juridiction: str = "JUDICIAIRE",
         numero_decision: str | None = None,
         sort: str | None = "PERTINENCE",
@@ -59,13 +61,15 @@ def register(mcp: FastMCP) -> None:
 
         Args:
             query: Search keywords.
-            date: Optional decision date in YYYY-MM-DD format.
+            date: Optional exact decision date in YYYY-MM-DD format.
+            date_start: Optional start date for date range filter (YYYY-MM-DD).
+            date_end: Optional end date for date range filter (YYYY-MM-DD).
             juridiction: Court type -- "JUDICIAIRE", "ADMINISTRATIF", "CONSTITUTIONNEL", or "FINANCIER".
             numero_decision: Optional specific decision number.
             sort: Sort order -- "PERTINENCE", "DATE_DESC", or "DATE_ASC".
         """
         logger.info("[MCP] legifrance_search_jurisprudence(query=%r, juridiction=%r)", query, juridiction)
-        return await legifrance_search_jurisprudence(query=query, date=date, juridiction=juridiction, numero_decision=numero_decision, sort=sort)
+        return await legifrance_search_jurisprudence(query=query, date=date, date_start=date_start, date_end=date_end, juridiction=juridiction, numero_decision=numero_decision, sort=sort)
 
     @mcp.tool()
     async def mcp_legifrance_search_conventions(
