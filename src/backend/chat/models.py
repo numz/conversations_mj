@@ -136,6 +136,8 @@ class ChatConversation(BaseModel):
             )
             return []
 
+        from chat.ai_sdk_types import ReasoningUIPart as ReasoningUIPartType  # noqa: PLC0415
+
         result = []
         for idx, msg in enumerate(parsed_messages):
             try:
@@ -179,7 +181,32 @@ class ChatConversation(BaseModel):
                 )
                 continue
 
-        return result
+        # Merge consecutive assistant messages: multi-step tool calling produces
+        # multiple ModelResponse entries (reasoning + tool call, then reasoning + text).
+        # We merge all reasoning parts into the last assistant message that has text content.
+        merged = []
+        pending_reasoning_parts = []
+        for msg in result:
+            if msg.role == "assistant":
+                reasoning_parts = [p for p in msg.parts if isinstance(p, ReasoningUIPartType)]
+                non_reasoning_parts = [p for p in msg.parts if not isinstance(p, ReasoningUIPartType)]
+                has_text = bool(msg.content)
+
+                if has_text:
+                    # Final assistant message with content — prepend accumulated reasoning
+                    msg.parts = pending_reasoning_parts + reasoning_parts + non_reasoning_parts
+                    pending_reasoning_parts = []
+                    merged.append(msg)
+                else:
+                    # Intermediate assistant message (no text) — collect its reasoning
+                    pending_reasoning_parts.extend(reasoning_parts)
+            else:
+                # Flush any orphan reasoning into a standalone message if no text follows
+                if pending_reasoning_parts:
+                    pending_reasoning_parts = []
+                merged.append(msg)
+
+        return merged
 
 
 class ChatConversationAttachment(BaseModel):
