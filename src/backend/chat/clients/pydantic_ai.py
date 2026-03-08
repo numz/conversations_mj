@@ -682,6 +682,38 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             """Wrap the document_summarize tool to provide context and add the tool."""
             return await document_summarize(ctx, *args, **kwargs)
 
+    async def _setup_mcp_document_context(self) -> None:
+        """Inject conversation ID, collection_id, and document info into agent instructions for MCP tools."""
+        conversation_id = str(self.conversation.pk)
+        collection_id = self.conversation.collection_id or ""
+        attachments = await sync_to_async(list)(
+            self.conversation.attachments.filter(
+                content_type__startswith="text/",
+            ).values_list("file_name", "key")
+        )
+
+        if not attachments:
+            return
+
+        doc_lines = [f"- {name}" for name, _key in attachments]
+        doc_info = "\n".join(doc_lines)
+        collection_note = (
+            f"For document_search_rag, use collection_id='{collection_id}'."
+            if collection_id
+            else ""
+        )
+
+        @self.conversation_agent.instructions
+        def mcp_document_context() -> str:
+            return (
+                f"[Internal context] This conversation (ID: {conversation_id}) has "
+                f"the following documents available:\n{doc_info}\n"
+                "Do not request re-upload of documents; consider them already available.\n"
+                f"For all document tools, use conversation_id='{conversation_id}'. "
+                "Use the document name (or partial name) for document_get_content. "
+                f"{collection_note}"
+            )
+
     async def _handle_input_documents(
         self,
         input_documents: List[BinaryContent | DocumentUrl],
@@ -1018,6 +1050,9 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
             self._setup_web_search(force_web_search)
             if await self._check_should_enable_rag(conversation_has_documents):
                 self._setup_rag_tools()
+        else:
+            # Inject conversation context for MCP document tools
+            await self._setup_mcp_document_context()
 
         async with AsyncExitStack() as stack:
             mcp_servers = [await stack.enter_async_context(mcp) for mcp in get_mcp_servers()]
