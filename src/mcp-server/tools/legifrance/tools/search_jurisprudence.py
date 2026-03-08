@@ -91,6 +91,14 @@ async def legifrance_search_jurisprudence(
         Dict with "results" and "sources".
     """
     try:
+        # Sanitize "null" strings sent by LLMs
+        if date and str(date).strip().lower() in ("null", "none", ""):
+            date = None
+        if date_start and str(date_start).strip().lower() in ("null", "none", ""):
+            date_start = None
+        if date_end and str(date_end).strip().lower() in ("null", "none", ""):
+            date_end = None
+
         # Validate input parameters
         try:
             validated = validate_input(
@@ -149,7 +157,14 @@ async def legifrance_search_jurisprudence(
                     ts_end = int(datetime.datetime.strptime(date_end, "%Y-%m-%d").timestamp() * 1000)
                 except ValueError:
                     logger.warning("Invalid date_end format: %s", date_end)
-            if ts_start is not None or ts_end is not None:
+            # API requires both start and end — default missing bounds
+            if ts_start is None and ts_end is not None:
+                # Default start to 1800-01-01
+                ts_start = int(datetime.datetime(1800, 1, 1).timestamp() * 1000)
+            if ts_end is None and ts_start is not None:
+                # Default end to today
+                ts_end = int(datetime.datetime.now().timestamp() * 1000)
+            if ts_start is not None and ts_end is not None:
                 filtres.append(SearchFilter(
                     facette=FACET_DATE_DECISION,
                     dateStart=ts_start,
