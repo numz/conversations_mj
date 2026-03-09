@@ -104,6 +104,28 @@ async def legifrance_search_admin(
         # Filters
         filtres = []
 
+        # Auto-detect nature from query for JORF to reduce noise
+        if fond == FOND_JORF:
+            _NATURE_KEYWORDS = {
+                "décret": "DECRET",
+                "decret": "DECRET",
+                "arrêté": "ARRETE",
+                "arrete": "ARRETE",
+                "ordonnance": "ORDONNANCE",
+                "loi": "LOI",
+                "circulaire": "CIRCULAIRE",
+            }
+            query_lower = actual_query.lower()
+            for keyword, nature_value in _NATURE_KEYWORDS.items():
+                if keyword in query_lower:
+                    filtres.append(SearchFilter(facette="NATURE", valeurs=[nature_value]))
+                    # Remove the keyword from query to avoid redundancy in title search
+                    actual_query = actual_query.replace(keyword, "").replace(keyword.capitalize(), "").replace(keyword.upper(), "").strip()
+                    # Rebuild criteria with cleaned query
+                    criteres = build_default_criteria(actual_query, search_field=search_field) if search_field else build_default_criteria(actual_query)
+                    logger.info("Auto-detected JORF nature filter: %s (cleaned query: '%s')", nature_value, actual_query)
+                    break  # Only one nature filter
+
         if fond == FOND_CNIL:
             if nature_delib:
                 filtres.append(SearchFilter(facette=FACET_NATURE_DELIB, valeurs=[nature_delib]))
