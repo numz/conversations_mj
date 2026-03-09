@@ -21,6 +21,7 @@ from ..constants import (
     FOND_CIRC,
     FOND_CNIL,
     FOND_JORF,
+    SEARCH_FIELD_TITLE,
     SORT_DATE_DECISION_DESC,
     SORT_PERTINENCE,
     SORT_PUBLICATION_DATE_DESC,
@@ -96,8 +97,9 @@ async def legifrance_search_admin(
 
         fond = source  # JORF, CIRC, CNIL
 
-        # Criteria
-        criteres = build_default_criteria(actual_query)
+        # Criteria: use TITLE field for JORF/CIRC to reduce noise
+        search_field = SEARCH_FIELD_TITLE if fond in (FOND_JORF, FOND_CIRC) else None
+        criteres = build_default_criteria(actual_query, search_field=search_field) if search_field else build_default_criteria(actual_query)
 
         # Filters
         filtres = []

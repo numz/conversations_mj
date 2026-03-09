@@ -1,0 +1,16 @@
+{
+  "run_id": "20260308_194229",
+  "mode": "API",
+  "timestamp": "2026-03-08T19:12:47.406235+00:00",
+  "total_questions": 22,
+  "successful": 22,
+  "errors": 0,
+  "scores": {
+    "retrieval_articles": 1.05,
+    "retrieval_jurisprudence": 2.77,
+    "tool_selection": 1.23,
+    "qualite_juridique": 2.05,
+    "hallucination": 1.05,
+    "composite_score": 0.51
+  }
+}
