@@ -31,12 +31,24 @@
   - `src/eval/run.py` — `--seed` CLI argument
 - **Status**: ✅ Conservé
 
-### Tir 8 — NUM_ARTICLE pour recherche article par numéro (EN COURS)
+### Tir 8 — NUM_ARTICLE pour recherche article par numéro ⭐ BASELINE SEED 42
 - **Branche**: `feat/legifrance-tools`
 - **Fichier**: `src/backend/chat/tools/legifrance/api.py`
 - **Modification**: `search_code_article()` utilise `typeChamp: NUM_ARTICLE` au lieu de `ALL`
 - **Validation**: Testé avec art. 1242 Code civil et art. L121-1 Code consommation — OK
-- **Status**: ✅ Commité, tir en cours avec `--seed 42 --sample 2`
+- **Résultat**: Composite **0.42** (seed 42, 22 questions, 0 erreurs)
+- **Détail scores**:
+  - Retrieval articles: 0.82/3
+  - Retrieval jurisprudence: 2.32/3
+  - Sélection outil: 0.77/2
+  - Qualité juridique: 1.45/5
+  - Hallucination: 1.41/3
+- **Constat clé**:
+  - tool_selection=0 sur 13/22 (59%) → le LLM n'appelle pas les outils
+  - 2 questions à 0.00 (réponses vides)
+  - hallucination=0 (sévère) sur 7/22 questions
+  - Meilleur score: QRC_Penal_2025::7 à 0.88
+- **Status**: ✅ Commité — **BASELINE de référence pour seed 42**
 
 ---
 
