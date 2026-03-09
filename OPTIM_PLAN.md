@@ -31,7 +31,19 @@
   - `src/eval/run.py` — `--seed` CLI argument
 - **Status**: ✅ Conservé
 
-### Tir 8 — NUM_ARTICLE pour recherche article par numéro ⭐ BASELINE SEED 42
+### Tir 8a — BASELINE SANS NUM_ARTICLE (seed 42) ⭐ REFERENCE
+- **But**: Établir une baseline reproductible avant la modif NUM_ARTICLE
+- **Config**: seed 42, --sample 2, --api, 22 questions
+- **Résultat**: Composite **0.50**
+- **Détail scores**:
+  - Retrieval articles: 1.00/3
+  - Retrieval jurisprudence: 2.59/3
+  - Sélection outil: 0.86/2
+  - Qualité juridique: 2.00/5
+  - Hallucination: 1.55/3
+- **Fichier résultats**: `src/eval/output/results_20260309_023816.jsonl`
+
+### Tir 8b — AVEC NUM_ARTICLE (seed 42)
 - **Branche**: `feat/legifrance-tools`
 - **Fichier**: `src/backend/chat/tools/legifrance/api.py`
 - **Modification**: `search_code_article()` utilise `typeChamp: NUM_ARTICLE` au lieu de `ALL`
@@ -43,12 +55,15 @@
   - Sélection outil: 0.77/2
   - Qualité juridique: 1.45/5
   - Hallucination: 1.41/3
-- **Constat clé**:
-  - tool_selection=0 sur 13/22 (59%) → le LLM n'appelle pas les outils
-  - 2 questions à 0.00 (réponses vides)
-  - hallucination=0 (sévère) sur 7/22 questions
-  - Meilleur score: QRC_Penal_2025::7 à 0.88
-- **Status**: ✅ Commité — **BASELINE de référence pour seed 42**
+- **Fichier résultats**: `src/eval/output/results_20260309_021312.jsonl`
+- **Comparaison A/B détaillée**:
+  - Diff composite: -0.08 (non significatif)
+  - `search_code_article_by_number` utilisé dans 7/22 questions
+  - Impact réel positif: QRC_droit_public_2025::9 — 39 calls→11 calls, score +0.20 (NUM_ARTICLE a cassé la boucle)
+  - Impact neutre: questions_reponses_droit_civil::12 — même score, mais 2 appels au lieu de 5
+  - Les diffs > 0.10 sur les autres questions = **bruit LLM** (questions sans appel outil dans les 2 runs)
+- **Conclusion**: NUM_ARTICLE est techniquement correct (moins de bruit, moins de boucles), la diff globale -0.08 est du bruit LLM
+- **Status**: ✅ Conservé
 
 ---
 
@@ -115,14 +130,18 @@ Basées sur l'analyse de la doc PISTE API (`description-des-tris-et-filtres-de-l
 
 ---
 
-## Problèmes identifiés (tir 7)
+## Problèmes identifiés (tir 8, seed 42)
 
 | Problème | Questions | Impact | Solution proposée |
 |----------|-----------|--------|-------------------|
-| Boucles massives (15-22 appels) | Q20, Q22, Q34 | Score ~0.30 | Limiter retries dans instructions |
-| Constitution introuvable | Q14 | Score 0.27 | Instruction: LODA ou JORF, pas "Code constitutionnel" |
-| Réponses vides | Q30, Q36 | Score 0.20-0.35 | Diagnostic streaming/timeout |
-| Pas d'appel outil (14/22 questions) | Multiples | Variable | Instructions renforcées (fait tir 6) |
+| **Pas d'appel outil (59%)** | 13/22 questions avec tool_selection=0 | Levier principal | Renforcer encore les instructions |
+| **Boucles massives** | QRC_public_2025::9 (39 calls avant NUM_ARTICLE) | Score faible | NUM_ARTICLE a aidé (39→11 calls) |
+| **Réponses vides** | CP_Civil_2023::3, NS_open_data::9 (score 0.00) | Perte sèche | Diagnostic streaming/timeout |
+| **Hallucinations sévères (h=0)** | 7/22 questions | Score plombé | Forcer l'usage des outils |
+| **Variance LLM** | Écarts ±0.50 entre 2 runs identiques | Comparaison difficile | Seed aide mais LLM reste non déterministe |
+
+### Leçon clé du tir 8
+Le **problème dominant n'est pas la qualité des requêtes API** mais le fait que le LLM **n'appelle pas les outils** dans 59% des cas. Les optimisations API (NUM_ARTICLE, TITLE, etc.) n'ont d'impact que sur les ~40% de questions où les outils sont effectivement appelés.
 
 ---
 
