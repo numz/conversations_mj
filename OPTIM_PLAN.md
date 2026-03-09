@@ -65,6 +65,26 @@
 - **Conclusion**: NUM_ARTICLE est techniquement correct (moins de bruit, moins de boucles), la diff globale -0.08 est du bruit LLM
 - **Status**: ✅ Conservé
 
+### Tir 9 — Filtre NATURE auto-détecté pour JORF
+- **Branche**: `feat/legifrance-tools`
+- **Fichier**: `src/backend/chat/tools/legifrance/tools/search_admin.py`
+- **Modification**: Auto-détection de mots-clés (décret, arrêté, ordonnance, loi, circulaire) dans la query → ajout filtre `NATURE` + nettoyage de la query
+- **Validation Docker**: "décret préfet" → NATURE=DECRET + query="préfet" ✅ / "ordonnance Mayotte" → NATURE=ORDONNANCE ✅ / "Constitution 1958" → pas de filtre ✅
+- **Résultat**: Composite **0.50** (seed 42, 22 questions, 0 erreurs)
+- **Détail scores**:
+  - Retrieval articles: 1.41/3 (vs 0.82 T8b, 1.00 T8a)
+  - Retrieval jurisprudence: 2.59/3 (stable)
+  - Sélection outil: 0.73/2 (stable)
+  - Qualité juridique: 1.68/5 (vs 1.45 T8b, 2.00 T8a)
+  - Hallucination: 1.41/3 (stable)
+- **Fichier résultats**: `src/eval/output/results_20260309_110530.jsonl`
+- **Comparaison 3 tirs (T8a baseline / T8b NUM_ARTICLE / T9 NATURE)**:
+  - T8a=0.50, T8b=0.42, T9=0.50
+  - Variance LLM toujours dominante (écarts ±0.53 entre questions)
+  - Retrieval articles amélioré (1.41 vs 0.82/1.00)
+  - Quelques gains notables: CP_civil_2024::15 +0.53, Composition_penal::12 +0.35
+- **Status**: ✅ Conservé
+
 ---
 
 ## Optimisations planifiées (par priorité)
@@ -108,10 +128,10 @@ Basées sur l'analyse de la doc PISTE API (`description-des-tris-et-filtres-de-l
 - **Modification**: Auto-détecter "QPC" dans la query → ajouter filtre `NATURE_CONSTIT`
 - **Filtres disponibles**: `NATURE_CONSTIT`, `SOLUTION_CONSTIT`, `TITRE_DEFEREE`, `NUM_LOI`
 
-### 7. Filtres `NATURE` / `MINISTERE` pour JORF
+### 7. ✅ Filtres `NATURE` pour JORF (FAIT — Tir 9)
 - **Fichier**: `tools/search_admin.py`
-- **Modification**: Si la query mentionne "décret", "arrêté", "ordonnance" → filtre `NATURE`
-- **Filtres disponibles**: `NATURE`, `MINISTERE`, `EMETTEUR`, `DECORATION`, `DELEGATION`
+- **Modification**: Auto-détection décret/arrêté/ordonnance/loi/circulaire → filtre `NATURE` + nettoyage query
+- **Impact**: Réduit le bruit sur l'outil le plus appelé (36x dans tir 8)
 
 ### 8. `getJoWithNor` — accès direct par NOR
 - **Fichier**: `api.py` + `tools/search_admin.py`
