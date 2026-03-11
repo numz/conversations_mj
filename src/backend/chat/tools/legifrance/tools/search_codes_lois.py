@@ -46,6 +46,7 @@ from ..core import (
     legifrance_search_core,
     validate_input,
 )
+from ..core.code_name_validator import validate_code_name
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +60,24 @@ async def legifrance_search_codes_lois(
     date: str | None = None,
 ) -> ToolReturn:
     """
-    Recherche dans les Codes et les Lois/Décrets.
+    Recherche par mots-clés dans les Codes et les Lois/Décrets.
+
+    ⚠️ Si tu connais le numéro exact d'un article, utilise plutôt
+    legifrance_search_code_article_by_number qui est plus fiable.
+
+    IMPORTANT pour la requête :
+    - Utilise des mots-clés COURTS (2-4 mots). Ex: "garde chose", "préfet", "1240".
+    - NE PAS écrire de phrases longues (elles échouent systématiquement).
+    - NE PAS mettre de guillemets dans la requête.
+    - Le "Code constitutionnel" N'EXISTE PAS. Pour la Constitution, utilise
+      type_source="LODA" avec query="Constitution" ou search_admin(source="JORF").
 
     Args:
         ctx: The run context.
-        query: Mots-clés ou numéro d'article.
+        query: Mots-clés courts (2-4 mots max). Ex: "1240", "garde chose", "préfet".
         type_source: "CODE" (Codes en vigueur) ou "LODA" (Lois et Décrets). Défaut: "CODE".
-        code_name: Nom du code (seulement si type_source="CODE"). Ex: "Code civil".
+        code_name: Nom EXACT du code (ex: "Code civil", "Code pénal"). Utilise
+                   legifrance_list_codes si tu n'es pas sûr du nom.
         date: Date de vigueur (YYYY-MM-DD). Défaut = Aujourd'hui.
 
     Returns:
@@ -87,6 +99,13 @@ async def legifrance_search_codes_lois(
             date = validated.date
         except ValueError as e:
             raise ModelCannotRetry(str(e)) from e
+
+        # Validate code_name against real Legifrance code list (CODE only)
+        if code_name and type_source in (TYPE_SOURCE_CODE, TYPE_SOURCE_CODE_DATE):
+            try:
+                code_name = await validate_code_name(code_name)
+            except ValueError as e:
+                raise ModelCannotRetry(str(e)) from e
 
         # Heuristic: Check if query is typically an article lookup
         match = re.match(r"^\s*(?:article|art\.?)\s+([LRDA]?\s*[\d\.-]+)\s*$", query, re.IGNORECASE)

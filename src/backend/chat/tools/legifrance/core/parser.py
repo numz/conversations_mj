@@ -41,8 +41,12 @@ def flatten_search_result(item: dict[str, Any]) -> list[LegifranceSearchResult]:
     meta = {k: v for k, v in meta.items() if v}
 
     root_id = item.get("id")
-    if not root_id and "titles" in item and item["titles"]:
-        root_id = item["titles"][0].get("id")
+    root_title: Optional[str] = None
+    if "titles" in item and item["titles"]:
+        first_title_obj = item["titles"][0]
+        if not root_id:
+            root_id = first_title_obj.get("id")
+        root_title = first_title_obj.get("title")
 
     def _recursive_extract(node: dict[str, Any], inherited_meta: dict[str, Any]) -> bool:
         found = False
@@ -50,7 +54,12 @@ def flatten_search_result(item: dict[str, Any]) -> list[LegifranceSearchResult]:
         # 1. Look for 'extracts' (matches with snippets)
         if "extracts" in node:
             for extract in node["extracts"]:
-                t = extract.get("title", extract.get("titre", NO_TITLE_FALLBACK))
+                t = extract.get("title", extract.get("titre", ""))
+                # Fallback to root title (e.g. from titles[0].title for JURITEXT)
+                if not t and root_title:
+                    t = root_title
+                if not t:
+                    t = NO_TITLE_FALLBACK
                 snippet_raw = " ".join(extract.get("values", []))
 
                 fallback_id = extract.get("id") or node.get("id") or root_id
@@ -82,6 +91,8 @@ def flatten_search_result(item: dict[str, Any]) -> list[LegifranceSearchResult]:
                     "juridiction",
                 ]
                 dataclass_kwargs = {k: v for k, v in entry_data.items() if k in valid_fields}
+                # Carry root item as raw data for downstream date/title extraction
+                dataclass_kwargs["raw"] = item
 
                 parsed_results.append(LegifranceSearchResult(**dataclass_kwargs))
                 found = True
@@ -215,7 +226,8 @@ def format_result_item(
     if extra_meta is None:
         extra_meta = []
 
-    rid = r.id
+    from .urls import _clean_id
+    rid = _clean_id(r.id)
     url = get_legifrance_url(rid, fond)
 
     title = r.title or ARTICLE_TITLE_FALLBACK

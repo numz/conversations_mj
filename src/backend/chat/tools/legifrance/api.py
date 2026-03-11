@@ -38,6 +38,7 @@ from .constants import (
     LEGAL_STATUS_VIGUEUR,
     PAGINATION_TYPE_ARTICLE,
     SEARCH_FIELD_ALL,
+    SEARCH_FIELD_NUM_ARTICLE,
     SEARCH_TYPE_EXACTE,
     SORT_PERTINENCE,
     SORT_TITLE_ASC,
@@ -579,7 +580,7 @@ class LegifranceAPI:
                 "recherche": {
                     "champs": [
                         {
-                            "typeChamp": SEARCH_FIELD_ALL,
+                            "typeChamp": SEARCH_FIELD_NUM_ARTICLE,
                             "criteres": [
                                 {
                                     "typeRecherche": SEARCH_TYPE_EXACTE,

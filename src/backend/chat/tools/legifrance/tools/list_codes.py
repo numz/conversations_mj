@@ -28,15 +28,16 @@ logger = logging.getLogger(__name__)
 @last_model_retry_soft_fail
 async def legifrance_list_codes(ctx: RunContext[Any], code_name: str = "") -> ToolReturn:
     """
-    List available legal codes in France.
+    Liste les codes juridiques disponibles sur Légifrance.
 
-    Use this to find the EXACT name of a code if queries where code was needed
-    returns nothing.
+    ⚠️ UTILISE CET OUTIL pour vérifier le nom exact d'un code AVANT de chercher.
+    Beaucoup de recherches échouent à cause d'un nom de code inexistant
+    (ex: "Code constitutionnel" N'EXISTE PAS).
 
     Args:
         ctx: The run context.
-        code_name: Filter by code name (e.g. "urbanisme" to find "Code de l'urbanisme").
-                   Leave empty to list all codes.
+        code_name: Filtre par nom (ex: "urbanisme" pour trouver "Code de l'urbanisme").
+                   Laisse vide pour lister tous les codes.
 
     Returns:
         ToolReturn with formatted list of codes and metadata.

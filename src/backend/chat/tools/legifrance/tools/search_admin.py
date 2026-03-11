@@ -21,6 +21,7 @@ from ..constants import (
     FOND_CIRC,
     FOND_CNIL,
     FOND_JORF,
+    SEARCH_FIELD_TITLE,
     SORT_DATE_DECISION_DESC,
     SORT_PERTINENCE,
     SORT_PUBLICATION_DATE_DESC,
@@ -53,13 +54,19 @@ async def legifrance_search_admin(
     """
     Recherche dans le Journal Officiel (JORF), Circulaires (CIRC) et CNIL.
 
+    Utilise cet outil pour les textes administratifs, décrets, ordonnances,
+    arrêtés, circulaires et délibérations CNIL.
+
+    💡 Pour les textes constitutionnels (Constitution de 1958, révisions),
+    cherche dans JORF avec des mots-clés comme "Constitution", "révision constitutionnelle".
+
     Args:
         ctx: The run context.
-        query: Mots-clés de recherche.
-        source: Source de recherche (JORF, CIRC, CNIL).
-        date: Date de publication/délibération (YYYY-MM-DD).
-        nor: Numéro NOR du document.
-        nature_delib: Nature de la délibération (pour CNIL).
+        query: Mots-clés courts (2-4 mots). Ex: "dissolution assemblée", "décret préfet".
+        source: JORF (Journal Officiel), CIRC (Circulaires) ou CNIL.
+        date: Date de publication/délibération (YYYY-MM-DD). Optionnel.
+        nor: Numéro NOR du document (si connu).
+        nature_delib: Nature de la délibération (pour CNIL uniquement).
 
     Returns:
         ToolReturn with formatted results and metadata.
@@ -90,11 +97,34 @@ async def legifrance_search_admin(
 
         fond = source  # JORF, CIRC, CNIL
 
-        # Criteria
-        criteres = build_default_criteria(actual_query)
+        # Criteria: use TITLE field for JORF/CIRC to reduce noise
+        search_field = SEARCH_FIELD_TITLE if fond in (FOND_JORF, FOND_CIRC) else None
+        criteres = build_default_criteria(actual_query, search_field=search_field) if search_field else build_default_criteria(actual_query)
 
         # Filters
         filtres = []
+
+        # Auto-detect nature from query for JORF to reduce noise
+        if fond == FOND_JORF:
+            _NATURE_KEYWORDS = {
+                "décret": "DECRET",
+                "decret": "DECRET",
+                "arrêté": "ARRETE",
+                "arrete": "ARRETE",
+                "ordonnance": "ORDONNANCE",
+                "loi": "LOI",
+                "circulaire": "CIRCULAIRE",
+            }
+            query_lower = actual_query.lower()
+            for keyword, nature_value in _NATURE_KEYWORDS.items():
+                if keyword in query_lower:
+                    filtres.append(SearchFilter(facette="NATURE", valeurs=[nature_value]))
+                    # Remove the keyword from query to avoid redundancy in title search
+                    actual_query = actual_query.replace(keyword, "").replace(keyword.capitalize(), "").replace(keyword.upper(), "").strip()
+                    # Rebuild criteria with cleaned query
+                    criteres = build_default_criteria(actual_query, search_field=search_field) if search_field else build_default_criteria(actual_query)
+                    logger.info("Auto-detected JORF nature filter: %s (cleaned query: '%s')", nature_value, actual_query)
+                    break  # Only one nature filter
 
         if fond == FOND_CNIL:
             if nature_delib:

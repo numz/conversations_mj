@@ -15,6 +15,7 @@ from chat.tools.utils import last_model_retry_soft_fail
 from ..api import LegifranceAPI
 from ..constants import FOND_CODE_DATE
 from ..core import SearchCodeArticleInput, build_source_with_title, validate_input
+from ..core.code_name_validator import validate_code_name
 from ..exceptions import (
     LegifranceAPIError,
     LegifranceRateLimitError,
@@ -30,15 +31,18 @@ async def legifrance_search_code_article_by_number(
     ctx: RunContext[Any], code_name: str, article_num: str
 ) -> ToolReturn:
     """
-    Search for a specific article NUMBER in a specific CODE.
+    Recherche un article par son NUMÉRO EXACT dans un Code. C'est l'outil LE PLUS FIABLE.
 
-    Use this when the user asks for "Article X of Code Y".
-    This tool uses a precise search strategy (EXACTE on article number).
+    ✅ UTILISE CET OUTIL EN PRIORITÉ quand tu connais le numéro d'article.
+    Exemples : article 1242 du Code civil, article L. 121-1 du Code pénal,
+    article 49-3 de la Constitution.
 
     Args:
         ctx: The run context.
-        code_name: The name of the Code (e.g. "Code pénal", "Code civil").
-        article_num: The article number (e.g. "1240", "123-1", "63").
+        code_name: Nom exact du Code (ex: "Code pénal", "Code civil",
+                   "Code de procédure pénale"). Utilise legifrance_list_codes
+                   si tu n'es pas sûr du nom.
+        article_num: Numéro de l'article (ex: "1240", "L. 121-1", "49-3").
 
     Returns:
         ToolReturn with formatted results and metadata.
@@ -53,6 +57,12 @@ async def legifrance_search_code_article_by_number(
             )
             code_name = validated.code_name
             article_num = validated.article_num
+        except ValueError as e:
+            raise ModelCannotRetry(str(e)) from e
+
+        # Validate code_name against real Legifrance code list
+        try:
+            code_name = await validate_code_name(code_name)
         except ValueError as e:
             raise ModelCannotRetry(str(e)) from e
 
