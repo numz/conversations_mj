@@ -1250,6 +1250,15 @@ class AIAgentService:  # pylint: disable=too-many-instance-attributes
 
         conversation_has_documents = doc_result.has_documents
 
+        # Prefix user prompt with uploaded document names for disambiguation
+        if input_documents:
+            _uploaded_names = [doc.identifier for doc in input_documents]
+            logger.info("Documents uploaded with this message: %s", _uploaded_names)
+            attachment_header = "\n".join(
+                f"[Attached: {name}]" for name in _uploaded_names
+            )
+            user_prompt = f"{attachment_header}\n\n{user_prompt}"
+
         await self._agent_stop_streaming(force_cache_check=True)
 
         _mcp_tools_enabled = getattr(settings, "MCP_TOOLS_ENABLED", False)
